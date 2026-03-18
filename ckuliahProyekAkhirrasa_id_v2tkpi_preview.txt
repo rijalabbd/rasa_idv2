@@ -1,0 +1,60 @@
+AP001|Nasi|180|3|0.3|39.8|0.2
+AP005|Nasi beras merah|149|2.8|0.4|32.5|0.3
+AP009|Nasi jagung|357|8.8|0.5|79.5|6.2
+AP024|Roti putih|248|8|1.2|50|9.1
+AP085|Mie ayam|102|6.2|3.9|10.5|0
+BH001|Santan|324|4.2|34.3|5.6|
+BM001|Beras giling|360|6.8|0.7|78.9|0.2
+BM002|Beras ketan hitam|356|7|0.7|77.9|
+BM003|Beras merah|352|7.3|0.9|76.2|0.8
+BM102|Kosong energi utama||6.8|0.7|78.9|0.2
+BM103|Semua nol|0|0|0|0|0
+BM104|Protein saja|0|5|0|0|
+BP045|Kerupuk udang goreng|477|4.7|4.7|68.5|5
+CP062|Tahu goreng|115|9.7|8.5|2.5|0.1
+CP083|Tempe pasar goreng|336|20|28|7.8|3.4
+DG001|Daging ayam|302|18.2|25|0|0
+DG002|Daging sapi|207|18.8|14|0|0
+DR100|Kangkung, segar|28|3.4|0.7|3.9|2
+ER001|Alpukat, segar|85|0.9|6.5|7.7|0
+ER054|Mangga, segar|52|0.7|0|12.3|1.6
+ER074|Pisang ambon, segar|108|1|0.8|24.3|1.9
+FR005|Ayam, daging, segar|298|18.2|25|0|0
+GP020|Ikan mujahir goreng|416|46.9|23.9|0|0
+HP001|Telur ayam, dadar, masakan|251|16.3|19.4|1.4|0
+IK001|Ikan mas|86|16|2|0|
+IK002|Ikan tongkol|109|24|1|0|
+MN001|Air putih|0|0|0|0|0
+SY001|Bayam|36|3.5|0.5|6.5|0.8
+SY002|Kangkung|29|3|0.3|5.4|1
+TH001|Tahu|68|7.8|4.6|1.6|0.1
+TL001|Telur ayam|162|12.8|11.5|0.7|0
+TP001|Tempe|149|18.3|4|12.7|1.4
+UM001|Ubi jalar merah|123|1.8|0.7|27.9|0.3
+UM002|Ubi kayu|154|1|0.3|36.8|0.4
+|Sayur (Umum)|25|2|0.3|4.5|1.5
+|Nasi Putih|180|3|0.3|39.8|0.2
+|Sawi Hijau|20|1.7|0.2|3.6|1.2
+|Bayam|36|3.5|0.5|6.5|2.7
+|Singkong|154|1|0.3|36.8|1.8
+|Tahu Goreng|115|10.9|7|2.6|0.2
+|Tempe Goreng|225|19|13.5|10|1.6
+|Ayam Goreng|260|27|16.5|0|0
+|Ikan|120|20|4|0|0
+|Kangkung|29|3.4|0.7|3.9|2
+|Ikan Mujair Goreng|416|46.9|23.9|0|0
+|Ikan Nila|128|19.8|5.2|0|0
+|Ikan Lele|96|18.7|2.2|0|0
+|Ikan Bandeng|129|20|4.8|0|0
+|Daging Kambing|154|16.6|9.2|0|0
+|Daging Sapi|273|17.5|22|0|0
+|Daging Ayam|298|18.2|25|0|0
+|Telur Bebek|185|13.1|14.3|0.7|0
+|Telur Ayam|154|12.4|11|0.7|0
+|Oncom|187|13|6|22.6|2
+|Tahu|80|8.1|4.7|1.6|0.1
+|Tempe|201|18.3|8.8|17|1.4
+|Nasi Merah|149|3.5|0.8|32|1.8
+|Ubi Jalar|123|1.8|0.7|28.2|3
+|Nasi Goreng|267|5.4|10.2|38.5|0.8
+|Kentang|93|2.1|0.1|21.6|1.8

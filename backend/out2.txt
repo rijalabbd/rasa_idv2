@@ -1,0 +1,28 @@
+Note: Unnecessary use of -X or --request, POST is already inferred.
+* Host localhost:8003 was resolved.
+* IPv6: ::1
+* IPv4: 127.0.0.1
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0*   Trying [::1]:8003...
+*   Trying 127.0.0.1:8003...
+* Connected to localhost (127.0.0.1) port 8003
+> POST /api/v1/detect HTTP/1.1
+> Host: localhost:8003
+> User-Agent: curl/8.7.1
+> Accept: */*
+> Content-Length: 217
+> Content-Type: multipart/form-data; boundary=------------------------wP4W0IMgajKAJu6CbM6zDT
+> 
+} [217 bytes data]
+* upload completely sent off: 217 bytes
+100   217    0     0  100   217      0    178  0:00:01  0:00:01 --:--:--   179100   217    0     0  100   217      0     97  0:00:02  0:00:02 --:--:--    97< HTTP/1.1 200 OK
+< date: Thu, 05 Feb 2026 16:51:32 GMT
+< server: uvicorn
+< content-length: 1311
+< content-type: application/json
+< x-request-id: b1f9175e-7dfe-4851-9d51-20d04c98bb6a
+< 
+{ [1311 bytes data]
+100  1528  100  1311  100   217    589     97  0:00:02  0:00:02 --:--:--   687{"analysis_id":73,"items":[{"label":"tempe","confidence":0.7619917841179737,"bbox":[165.5712644830639,184.73425241454817,411.24750722898233,370.0004522293581],"tkpi":{"id":5,"name":"Tempe","nutrition":{"energi_kal":200.0,"protein_g":18.0,"lemak_g":10.0,"karbo_g":12.0,"serat_g":3.0}},"nutrition_status":"COCOK","nutrition_status_label":"Cocok","nutrition_note":null},{"label":"ayam","confidence":0.8072153110637303,"bbox":[187.03107914748944,178.13966190204835,378.6921830527905,299.1172221292197],"tkpi":{"id":8,"name":"Daging Ayam","nutrition":{"energi_kal":200.0,"protein_g":25.0,"lemak_g":11.0,"karbo_g":0.0,"serat_g":0.0}},"nutrition_status":"MENDEKATI","nutrition_status_label":"Mendekati","nutrition_note":"Angka gizi belum termasuk minyak/bumbu."},{"label":"tahu","confidence":0.6314845802097815,"bbox":[109.91432778500922,97.24459182844048,407.54661321924067,283.002445023483],"tkpi":{"id":4,"name":"Tahu","nutrition":{"energi_kal":150.0,"protein_g":13.0,"lemak_g":8.0,"karbo_g":5.0,"serat_g":1.0}},"nutrition_status":"COCOK","nutrition_status_label":"Cocok","nutrition_note":null}],"image_path":"uploads/2026/02/05/6fb0cf9817704d8fb00666a411e1ca11.png","model_version":"best.pt","avg_confidence":0.73,"total_nutrition":{"energi_kal":550.0,"protein_g":56.0,"lemak_g":29.0,"karbo_g":17.0,"serat_g":4.0}}
+* Connection #0 to host localhost left intact

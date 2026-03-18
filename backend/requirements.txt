@@ -1,0 +1,26 @@
+# Core API
+fastapi>=0.109.0
+uvicorn[standard]>=0.27.0
+
+# Database
+sqlalchemy>=2.0.25
+alembic>=1.13.1
+psycopg2-binary>=2.9.9
+
+# Config & utils
+pydantic-settings>=2.1.0
+python-dotenv>=1.0.0
+requests>=2.31.0
+
+# File & image
+python-multipart>=0.0.6
+pillow>=10.2.0
+
+# Numerical (locked for torch stability)
+numpy==1.26.4
+
+# YOLO runtime (NO GUI)
+opencv-python-headless==4.10.0.84
+
+# Deep Learning
+ultralytics>=8.0.0

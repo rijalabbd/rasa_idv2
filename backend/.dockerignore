@@ -1,0 +1,59 @@
+# =============================================================================
+# Docker ignore file for backend
+# =============================================================================
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+.eggs/
+dist/
+build/
+
+# Virtual environments
+.venv/
+.venv__off/
+venv/
+ENV/
+
+# Environment files (use docker-compose env instead)
+.env
+.env.local
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Database file (SQLite - not used in Docker)
+*.db
+app.db
+nul
+
+# Storage uploads (will be mounted as volume)
+storage/uploads/*
+storage/feedback/images/*
+storage/feedback/labels/*
+storage/class_requests/images/*
+storage/exports/*
+storage/temp/*
+
+# Keep gitkeep files
+!storage/**/.gitkeep
+
+# Documentation
+*.md
+!README.md
+
+# Git
+.git/
+.gitignore

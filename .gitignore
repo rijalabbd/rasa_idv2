@@ -1,0 +1,63 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+.eggs/
+dist/
+build/
+
+# Virtual environments
+.venv/
+backend/.venv/
+venv/
+ENV/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Backend runtime storage - DO NOT COMMIT
+backend/storage/uploads/
+backend/storage/feedback/images/
+backend/storage/feedback/labels/
+backend/storage/class_requests/images/
+backend/storage/exports/
+backend/storage/temp/
+backend/storage/models/*.pt
+
+# ML workspace - large files
+ml/experiments/
+ml/datasets/*/images/
+ml/datasets/*/labels/
+
+# Keep directory structure (.gitkeep files are allowed)
+!backend/storage/**/.gitkeep
+!ml/**/.gitkeep
+
+# Misc
+*.log
+*.zip
+*.tar.gz
+.DS_Store
+Thumbs.db
+
+# Node modules (admin dashboard)
+node_modules/
+admin_dashboard/node_modules/
+
+# Temporary Artifacts
+_temp_artifacts/
+_debug/
+temp_pw_test/
+test-results/
+playwright-report/

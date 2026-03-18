@@ -1,0 +1,36 @@
+# TKPI Sample Data - TEST DATA ONLY
+# ================================
+# This is SAMPLE/TEST DATA for development purposes.
+# NOT official TKPI (Tabel Komposisi Pangan Indonesia) data.
+# Values are approximations for testing only.
+#
+# Columns: kode_pangan, nama_bahan, energi_kal, protein_g, lemak_g, karbo_g, serat_g
+# Per 100g serving
+
+kode_pangan,nama_bahan,energi_kal,protein_g,lemak_g,karbo_g,serat_g
+AP001,Nasi Putih,180.0,3.0,0.3,39.8,0.2
+AP002,Nasi Goreng,267.0,5.4,10.2,38.5,0.8
+AP003,Nasi Merah,149.0,3.5,0.8,32.0,1.8
+BP001,Tempe,201.0,18.3,8.8,17.0,1.4
+BP002,Tahu,80.0,8.1,4.7,1.6,0.1
+BP003,Oncom,187.0,13.0,6.0,22.6,2.0
+CP001,Telur Ayam,154.0,12.4,11.0,0.7,0.0
+CP002,Telur Bebek,185.0,13.1,14.3,0.7,0.0
+DP001,Daging Ayam,298.0,18.2,25.0,0.0,0.0
+DP002,Daging Sapi,273.0,17.5,22.0,0.0,0.0
+DP003,Daging Kambing,154.0,16.6,9.2,0.0,0.0
+GP001,Ikan Bandeng,129.0,20.0,4.8,0.0,0.0
+GP002,Ikan Lele,96.0,18.7,2.2,0.0,0.0
+GP003,Ikan Nila,128.0,19.8,5.2,0.0,0.0
+GP020,Ikan Mujair Goreng,416.0,46.9,23.9,0.0,0.0
+HP001,Kangkung,29.0,3.4,0.7,3.9,2.0
+HP002,Bayam,36.0,3.5,0.5,6.5,2.7
+HP003,Sawi Hijau,20.0,1.7,0.2,3.6,1.2
+HP004,Sayur (Umum),25.0,2.0,0.3,4.5,1.5
+IP001,Kentang,93.0,2.1,0.1,21.6,1.8
+IP002,Ubi Jalar,123.0,1.8,0.7,28.2,3.0
+IP003,Singkong,154.0,1.0,0.3,36.8,1.8
+JP001,Tahu Goreng,115.0,10.9,7.0,2.6,0.2
+JP002,Tempe Goreng,225.0,19.0,13.5,10.0,1.6
+JP003,Ayam Goreng,260.0,27.0,16.5,0.0,0.0
+KP001,Ikan,120.0,20.0,4.0,0.0,0.0

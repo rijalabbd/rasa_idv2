@@ -1,0 +1,13 @@
+train: ./train/images
+val: ./valid/images
+test: ./test/images
+
+nc: 8
+names: ['ayam_goreng', 'buncis_rebus', 'ikan_mujair', 'nasi_putih', 'tahu_goreng', 'telur_ayam_dadar', 'tempe_goreng', 'tumis_kangkung']
+
+roboflow:
+  workspace: makanan-indonesia-8bsr5
+  project: indofoodv6
+  version: 3
+  license: CC BY 4.0
+  url: https://universe.roboflow.com/makanan-indonesia-8bsr5/indofoodv6/dataset/3

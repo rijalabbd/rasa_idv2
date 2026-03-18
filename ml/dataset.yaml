@@ -1,0 +1,15 @@
+path: c:/kuliah/ProyekAkhir/rasa_id_v2/ml/datasets/final
+train: images
+val: images
+
+names:
+  0: nasi
+  1: ayam
+  2: ikan
+  3: tempe
+  4: tahu
+  5: sayur
+  6: telur
+  7: daging
+  8: udang
+  9: cumi

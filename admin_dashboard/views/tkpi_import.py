@@ -1,0 +1,321 @@
+"""TKPI CSV Import view — upload, dry-run, commit.
+
+Safety features:
+  - SHA256 file-change detection (prevents committing different file than validated)
+  - Confirmation checkbox gate before commit
+  - Enhanced error banners with HTTP status + body + Ref ID
+"""
+
+import io
+import csv
+import hashlib
+import streamlit as st
+from utils.api import api_request
+
+
+def _file_sha256(file_bytes: bytes) -> str:
+    """Compute SHA256 hex digest of file bytes."""
+    return hashlib.sha256(file_bytes).hexdigest()
+
+
+def _call_import(uploaded_file, dry_run: bool) -> tuple[dict | None, int, str | None]:
+    """Call the TKPI import endpoint.
+
+    Returns (data, http_status, ref_id).
+    """
+    uploaded_file.seek(0)
+    files = {"file": (uploaded_file.name, uploaded_file.getvalue(), "text/csv")}
+    params = {"dry_run": str(dry_run).lower()}
+
+    data, status, headers, _ = api_request(
+        "POST", "/admin/tkpi/import-csv", files=files, params=params, timeout=120
+    )
+
+    ref_id = None
+    if headers:
+        ref_id = headers.get("x-request-id") or st.session_state.get("last_request_id")
+
+    if status == 200 and isinstance(data, dict):
+        return data, status, ref_id
+    return data, status, ref_id
+
+
+def _show_error_banner(data, status: int, ref_id: str | None, action: str):
+    """Show detailed error banner for failed API calls."""
+    ref_part = f" (Ref: `{ref_id}`)" if ref_id else ""
+
+    if isinstance(data, dict):
+        detail = data.get("detail", "Unknown error")
+        code = data.get("code", "ERROR")
+        st.error(f"❌ {action} failed — HTTP {status} · {code}: {detail}{ref_part}")
+    elif isinstance(data, (str, bytes)):
+        body = data[:200] if isinstance(data, str) else data.decode("utf-8", errors="replace")[:200]
+        st.error(f"❌ {action} failed — HTTP {status}: {body}{ref_part}")
+    else:
+        st.error(f"❌ {action} failed — HTTP {status}{ref_part}")
+
+
+def _show_summary(result: dict, ref_id: str | None):
+    """Display import summary metrics."""
+    dry_run = result.get("dry_run", True)
+    mode_label = "🔍 Dry-run Result" if dry_run else "✅ Commit Result"
+
+    st.subheader(mode_label)
+
+    if ref_id:
+        st.caption(f"Ref: `{ref_id}`")
+
+    c1, c2, c3, c4 = st.columns(4)
+    c1.metric("Rows Total", result.get("rows_total", 0))
+    c2.metric("Processed", result.get("processed_count", 0))
+    c3.metric("Skipped", result.get("skipped_count", 0))
+    c4.metric("Errors", result.get("errors_count", 0))
+
+    c5, c6, c7, c8 = st.columns(4)
+    if dry_run:
+        c5.metric("New (would insert)", result.get("new_count", 0))
+        c6.metric("Existing (would update)", result.get("existing_count", 0))
+    else:
+        c5.metric("Inserted", result.get("inserted_count", 0))
+        c6.metric("Updated", result.get("updated_count", 0))
+    c7.metric("Warnings", result.get("warnings_count", 0))
+    # Show the other count pair in the 4th column
+    if dry_run:
+        c8.metric("Existing in DB", result.get("existing_count", 0))
+    else:
+        c8.metric("New (inserted)", result.get("new_count", 0))
+
+
+def _show_issues(result: dict, kind: str):
+    """Show errors or warnings table + optional CSV download."""
+    items = result.get(kind, [])
+    count = result.get(f"{kind}_count", 0)
+    truncated = result.get(f"{kind}_truncated", False)
+
+    if count == 0:
+        return
+
+    icon = "❌" if kind == "errors" else "⚠️"
+    label = "Errors" if kind == "errors" else "Warnings"
+
+    with st.expander(f"{icon} {label} ({count})", expanded=(kind == "errors")):
+        if truncated:
+            st.info(f"Showing first {len(items)} of {count} {kind}.")
+
+        # Table
+        display = items[:20]
+        table_data = []
+        for item in display:
+            table_data.append({
+                "Row": item.get("row_number", ""),
+                "TKPI Code": item.get("tkpi_code") or "—",
+                "Message": item.get("message", ""),
+            })
+
+        if table_data:
+            st.dataframe(table_data, use_container_width=True, hide_index=True)
+
+        if len(items) > 20:
+            st.caption(f"... and {len(items) - 20} more (download CSV for full list)")
+
+        # Download CSV
+        if items:
+            csv_buf = io.StringIO()
+            writer = csv.DictWriter(csv_buf, fieldnames=["row_number", "tkpi_code", "message"])
+            writer.writeheader()
+            for item in items:
+                writer.writerow({
+                    "row_number": item.get("row_number", ""),
+                    "tkpi_code": item.get("tkpi_code", ""),
+                    "message": item.get("message", ""),
+                })
+            st.download_button(
+                f"📥 Download {label} CSV",
+                csv_buf.getvalue(),
+                file_name=f"tkpi_import_{kind}.csv",
+                mime="text/csv",
+                key=f"dl_{kind}",
+            )
+
+
+def render_tkpi_import():
+    """Render the TKPI CSV Import view."""
+    st.title("📊 TKPI CSV Import")
+    st.caption("Upload CSV → Validate (dry-run) → Review → Commit")
+    st.divider()
+
+    # ── File uploader ────────────────────────────────────────────────
+    uploaded_file = st.file_uploader(
+        "Upload TKPI CSV file",
+        type=["csv"],
+        help="UTF-8, comma or semicolon delimiter. Required columns: tkpi_code, name",
+        key="tkpi_csv_file",
+    )
+
+    current_hash = None
+    if uploaded_file:
+        file_bytes = uploaded_file.getvalue()
+        size_kb = len(file_bytes) / 1024
+        current_hash = _file_sha256(file_bytes)
+        st.info(f"📄 **{uploaded_file.name}** — {size_kb:.1f} KB")
+    else:
+        # Clear results when file is removed
+        st.session_state.tkpi_import_result = None
+        st.session_state.tkpi_import_ref = None
+        st.session_state.tkpi_commit_result = None
+        st.session_state.tkpi_commit_ref = None
+        st.session_state.tkpi_validated_hash = None
+
+    st.divider()
+
+    # ── Dry-run button ───────────────────────────────────────────────
+    col_dry, col_commit = st.columns(2)
+
+    with col_dry:
+        dry_disabled = uploaded_file is None
+        if st.button(
+            "🔍 Validate (Dry-run)",
+            disabled=dry_disabled,
+            use_container_width=True,
+            type="primary",
+        ):
+            # Clear previous state
+            st.session_state.tkpi_import_result = None
+            st.session_state.tkpi_import_ref = None
+            st.session_state.tkpi_commit_result = None
+            st.session_state.tkpi_commit_ref = None
+            st.session_state.tkpi_validated_hash = None
+
+            with st.spinner("Validating CSV..."):
+                data, status, ref = _call_import(uploaded_file, dry_run=True)
+
+            if status == 200 and data:
+                st.session_state.tkpi_import_result = data
+                st.session_state.tkpi_import_ref = ref
+                # Store hash of validated file
+                st.session_state.tkpi_validated_hash = current_hash
+            else:
+                st.session_state.tkpi_import_result = None
+                _show_error_banner(data, status, ref, "Dry-run")
+
+            st.rerun()
+
+    # ── File change detection ────────────────────────────────────────
+    dry_result = st.session_state.get("tkpi_import_result")
+    validated_hash = st.session_state.get("tkpi_validated_hash")
+    file_changed = (
+        current_hash is not None
+        and validated_hash is not None
+        and current_hash != validated_hash
+    )
+
+    if file_changed:
+        st.warning("🔄 File changed since validation. Please run **Validate (Dry-run)** again.")
+
+    # ── Commit gate: conditions ──────────────────────────────────────
+    has_dry_run = dry_result is not None
+    has_zero_errors = has_dry_run and dry_result.get("errors_count", 1) == 0
+    hash_matches = not file_changed and validated_hash is not None
+    file_present = uploaded_file is not None
+
+    # Confirmation checkbox
+    confirm_checked = False
+    if has_dry_run and has_zero_errors and file_present and hash_matches:
+        confirm_checked = st.checkbox(
+            "⚠️ I understand this will write to the database",
+            key="tkpi_commit_confirm",
+        )
+
+    can_commit = (
+        file_present
+        and has_dry_run
+        and has_zero_errors
+        and hash_matches
+        and confirm_checked
+    )
+
+    # ── Commit button ────────────────────────────────────────────────
+    with col_commit:
+        if st.button(
+            "✅ Commit Import",
+            disabled=not can_commit,
+            use_container_width=True,
+            type="secondary",
+        ):
+            st.session_state.tkpi_commit_result = None
+            st.session_state.tkpi_commit_ref = None
+
+            with st.spinner("Importing into database..."):
+                data, status, ref = _call_import(uploaded_file, dry_run=False)
+
+            if status == 200 and data:
+                st.session_state.tkpi_commit_result = data
+                st.session_state.tkpi_commit_ref = ref
+                st.toast("✅ Import committed successfully!")
+            else:
+                _show_error_banner(data, status, ref, "Commit")
+
+            st.rerun()
+
+    if not can_commit and has_dry_run and not has_zero_errors:
+        st.warning("⚠️ Cannot commit: fix CSV errors first, then re-validate.")
+
+    st.divider()
+
+    # ── Display results ──────────────────────────────────────────────
+    commit_result = st.session_state.get("tkpi_commit_result")
+    commit_ref = st.session_state.get("tkpi_commit_ref")
+
+    if commit_result:
+        _show_summary(commit_result, commit_ref)
+        _show_issues(commit_result, "errors")
+        _show_issues(commit_result, "warnings")
+        st.success(
+            f"✅ Import committed: "
+            f"{commit_result.get('inserted_count', 0)} inserted, "
+            f"{commit_result.get('updated_count', 0)} updated"
+        )
+
+    elif dry_result:
+        dry_ref = st.session_state.get("tkpi_import_ref")
+        _show_summary(dry_result, dry_ref)
+        _show_issues(dry_result, "errors")
+        _show_issues(dry_result, "warnings")
+
+    # ── Current TKPI Data Preview ────────────────────────────────────
+    st.divider()
+    st.subheader("📋 Data TKPI Saat Ini")
+
+    if st.button("🔄 Refresh Data", key="tkpi_refresh"):
+        st.session_state.tkpi_preview_data = None
+        st.rerun()
+
+    # Load data
+    if st.session_state.get("tkpi_preview_data") is None:
+        data, status, _, _ = api_request("GET", "/admin/tkpi/list", params={"limit": 500})
+        if status == 200 and isinstance(data, dict):
+            st.session_state.tkpi_preview_data = data
+        else:
+            st.session_state.tkpi_preview_data = {"total": 0, "items": []}
+
+    preview = st.session_state.get("tkpi_preview_data", {})
+    total = preview.get("total", 0)
+    items = preview.get("items", [])
+
+    st.caption(f"Total: **{total}** item dalam database")
+
+    if items:
+        table = []
+        for item in items:
+            table.append({
+                "Kode": item.get("tkpi_code", ""),
+                "Nama": item.get("name", ""),
+                "Energi (kcal)": item.get("energi_kal") or "—",
+                "Protein (g)": item.get("protein_g") or "—",
+                "Lemak (g)": item.get("lemak_g") or "—",
+                "Karbo (g)": item.get("karbo_g") or "—",
+                "Serat (g)": item.get("serat_g") or "—",
+            })
+        st.dataframe(table, use_container_width=True, hide_index=True, height=400)
+    else:
+        st.info("Belum ada data TKPI. Upload CSV untuk memulai.")

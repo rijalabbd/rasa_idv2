@@ -1,0 +1,203 @@
+rasa_id_backend  | 🚀 Starting RASA-ID Backend...
+rasa_id_backend  | ⏳ Waiting for database connection...
+rasa_id_backend  | 📂 Ensuring storage directories...
+rasa_id_backend  | ✅ Storage symlink verified: /app/uploads -> /app/storage/uploads
+rasa_id_backend  | ✅ Database connection successful!
+rasa_id_backend  | 📦 Running database migrations...
+rasa_id_backend  | INFO  [alembic.runtime.migration] Context impl PostgresqlImpl.
+rasa_id_backend  | INFO  [alembic.runtime.migration] Will assume transactional DDL.
+rasa_id_backend  | ✅ Migrations complete!
+rasa_id_backend  | 🌐 Starting uvicorn server...
+rasa_id_backend  | INFO:     Will watch for changes in these directories: ['/app']
+rasa_id_backend  | INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+rasa_id_backend  | INFO:     Started reloader process [1] using WatchFiles
+rasa_id_backend  | WARNING ⚠️ user config directory '/root/.config/Ultralytics' is not writable, using '/tmp/Ultralytics'. Set YOLO_CONFIG_DIR to override.
+rasa_id_backend  | Creating new Ultralytics Settings v0.0.6 file ✅ 
+rasa_id_backend  | View Ultralytics Settings with 'yolo settings' or at '/tmp/Ultralytics/settings.json'
+rasa_id_backend  | Update Settings with 'yolo settings key=value', i.e. 'yolo settings runs_dir=path/to/dir'. For help see https://docs.ultralytics.com/quickstart/#ultralytics-settings.
+rasa_id_backend  | INFO:     Started server process [12]
+rasa_id_backend  | INFO:     Waiting for application startup.
+rasa_id_backend  | 🔒 Detection resources initialized: Max Concurrency=2
+rasa_id_backend  | INFO:app.services.model_manager:Loading YOLO model from /app/storage/models/active.pt...
+rasa_id_backend  | INFO:app.services.model_manager:✅ YOLO model loaded successfully.
+rasa_id_backend  | INFO:app.services.model_manager:Model meta: sha256=6b211dca764a… size=18477974 loaded_at=2026-03-11T05:26:13.450752Z
+rasa_id_backend  | INFO:     Application startup complete.
+rasa_id_backend  | 🚀 RASA-ID API starting up...
+rasa_id_backend  | 📚 API Documentation: http://localhost:8000/docs
+rasa_id_backend  | INFO:app.services.detection_service:{'event': 'inference_complete', 'request_id': 'f7f35aaf-82ab-4d10-81b1-0b5f00771647', 'inference_ms': 390.78, 'num_items': 2, 'model_path': 'active.pt', 'sha256': '6b211dca764a', 'loaded_at': '2026-03-11T05:26:13.450752Z', 'conf': 0.5, 'iou': 0.45}
+rasa_id_backend  | INFO:api_access:{"request_id": "f7f35aaf-82ab-4d10-81b1-0b5f00771647", "method": "POST", "path": "/api/v1/detect", "status_code": 200, "latency_ms": 509.43, "ip": "172.18.0.1"}
+rasa_id_backend  | INFO:     172.18.0.1:33958 - "POST /api/v1/detect HTTP/1.1" 200 OK
+rasa_id_backend  | INFO:api_access:{"request_id": "e721c51c-3fa4-451f-a025-b1471353a971", "method": "GET", "path": "/api/v1/admin/summary", "status_code": 500, "latency_ms": 27.92, "ip": "172.18.0.4"}
+rasa_id_backend  | Unhandled error: (psycopg2.errors.UndefinedTable) relation "class_requests" does not exist
+rasa_id_backend  | LINE 2: FROM class_requests
+rasa_id_backend  |              ^
+rasa_id_backend  | 
+rasa_id_backend  | [SQL: SELECT count(class_requests.id) AS count_1 
+rasa_id_backend  | FROM class_requests]
+rasa_id_backend  | (Background on this error at: https://sqlalche.me/e/20/f405)
+rasa_id_backend  | INFO:     172.18.0.4:40048 - "GET /api/v1/admin/summary HTTP/1.1" 500 Internal Server Error
+rasa_id_backend  | ERROR:    Exception in ASGI application
+rasa_id_backend  | Traceback (most recent call last):
+rasa_id_backend  |   File "/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py", line 1967, in _exec_single_context
+rasa_id_backend  |     self.dialect.do_execute(
+rasa_id_backend  |   File "/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/default.py", line 952, in do_execute
+rasa_id_backend  |     cursor.execute(statement, parameters)
+rasa_id_backend  | psycopg2.errors.UndefinedTable: relation "class_requests" does not exist
+rasa_id_backend  | LINE 2: FROM class_requests
+rasa_id_backend  |              ^
+rasa_id_backend  | 
+rasa_id_backend  | 
+rasa_id_backend  | The above exception was the direct cause of the following exception:
+rasa_id_backend  | 
+rasa_id_backend  | Traceback (most recent call last):
+rasa_id_backend  |   File "/usr/local/lib/python3.11/site-packages/uvicorn/protocols/http/httptools_impl.py", line 416, in run_asgi
+rasa_id_backend  |     result = await app(  # type: ignore[func-returns-value]
+rasa_id_backend  |              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+rasa_id_backend  |   File "/usr/local/lib/python3.11/site-packages/uvicorn/middleware/proxy_headers.py", line 60, in __call__
+rasa_id_backend  |     return await self.app(scope, receive, send)
+rasa_id_backend  |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+rasa_id_backend  |   File "/usr/local/lib/python3.11/site-packages/fastapi/applications.py", line 1138, in __call__
+rasa_id_backend  |     await super().__call__(scope, receive, send)
+rasa_id_backend  |   File "/usr/local/lib/python3.11/site-packages/starlette/applications.py", line 107, in __call__
+rasa_id_backend  |     await self.middleware_stack(scope, receive, send)
+rasa_id_backend  |   File "/usr/local/lib/python3.11/site-packages/starlette/middleware/errors.py", line 186, in __call__
+rasa_id_backend  |     raise exc
+rasa_id_backend  |   File "/usr/local/lib/python3.11/site-packages/starlette/middleware/errors.py", line 164, in __call__
+rasa_id_backend  |     await self.app(scope, receive, _send)
+rasa_id_backend  |   File "/usr/local/lib/python3.11/site-packages/starlette/middleware/base.py", line 191, in __call__
+rasa_id_backend  |     with recv_stream, send_stream, collapse_excgroups():
+rasa_id_backend  |   File "/usr/local/lib/python3.11/contextlib.py", line 158, in __exit__
+rasa_id_backend  |     self.gen.throw(typ, value, traceback)
+rasa_id_backend  |   File "/usr/local/lib/python3.11/site-packages/starlette/_utils.py", line 87, in collapse_excgroups
+rasa_id_backend  |     raise exc
+rasa_id_backend  |   File "/usr/local/lib/python3.11/site-packages/starlette/middleware/base.py", line 193, in __call__
+rasa_id_backend  |     response = await self.dispatch_func(request, call_next)
+rasa_id_backend  |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+rasa_id_backend  |   File "/app/app/core/middleware.py", line 26, in dispatch
+rasa_id_backend  |     response = await call_next(request)
+rasa_id_backend  |                ^^^^^^^^^^^^^^^^^^^^^^^^
+rasa_id_backend  |   File "/usr/local/lib/python3.11/site-packages/starlette/middleware/base.py", line 168, in call_next
+rasa_id_backend  |     raise app_exc from app_exc.__cause__ or app_exc.__context__
+rasa_id_backend  |   File "/usr/local/lib/python3.11/site-packages/starlette/middleware/base.py", line 144, in coro
+rasa_id_backend  |     await self.app(scope, receive_or_disconnect, send_no_error)
+rasa_id_backend  |   File "/usr/local/lib/python3.11/site-packages/starlette/middleware/base.py", line 191, in __call__
+rasa_id_backend  |     with recv_stream, send_stream, collapse_excgroups():
+rasa_id_backend  |   File "/usr/local/lib/python3.11/contextlib.py", line 158, in __exit__
+rasa_id_backend  |     self.gen.throw(typ, value, traceback)
+rasa_id_backend  |   File "/usr/local/lib/python3.11/site-packages/starlette/_utils.py", line 87, in collapse_excgroups
+rasa_id_backend  |     raise exc
+rasa_id_backend  |   File "/usr/local/lib/python3.11/site-packages/starlette/middleware/base.py", line 193, in __call__
+rasa_id_backend  |     response = await self.dispatch_func(request, call_next)
+rasa_id_backend  |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+rasa_id_backend  |   File "/app/app/core/middleware.py", line 45, in dispatch
+rasa_id_backend  |     raise e
+rasa_id_backend  |   File "/app/app/core/middleware.py", line 40, in dispatch
+rasa_id_backend  |     response = await call_next(request)
+rasa_id_backend  |                ^^^^^^^^^^^^^^^^^^^^^^^^
+rasa_id_backend  |   File "/usr/local/lib/python3.11/site-packages/starlette/middleware/base.py", line 168, in call_next
+rasa_id_backend  |     raise app_exc from app_exc.__cause__ or app_exc.__context__
+rasa_id_backend  |   File "/usr/local/lib/python3.11/site-packages/starlette/middleware/base.py", line 144, in coro
+rasa_id_backend  |     await self.app(scope, receive_or_disconnect, send_no_error)
+rasa_id_backend  |   File "/usr/local/lib/python3.11/site-packages/starlette/middleware/cors.py", line 87, in __call__
+rasa_id_backend  |     await self.app(scope, receive, send)
+rasa_id_backend  |   File "/usr/local/lib/python3.11/site-packages/starlette/middleware/exceptions.py", line 63, in __call__
+rasa_id_backend  |     await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+rasa_id_backend  |   File "/usr/local/lib/python3.11/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+rasa_id_backend  |     raise exc
+rasa_id_backend  |   File "/usr/local/lib/python3.11/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+rasa_id_backend  |     await app(scope, receive, sender)
+rasa_id_backend  |   File "/usr/local/lib/python3.11/site-packages/fastapi/middleware/asyncexitstack.py", line 18, in __call__
+rasa_id_backend  |     await self.app(scope, receive, send)
+rasa_id_backend  |   File "/usr/local/lib/python3.11/site-packages/starlette/routing.py", line 716, in __call__
+rasa_id_backend  |     await self.middleware_stack(scope, receive, send)
+rasa_id_backend  |   File "/usr/local/lib/python3.11/site-packages/starlette/routing.py", line 736, in app
+rasa_id_backend  |     await route.handle(scope, receive, send)
+rasa_id_backend  |   File "/usr/local/lib/python3.11/site-packages/starlette/routing.py", line 290, in handle
+rasa_id_backend  |     await self.app(scope, receive, send)
+rasa_id_backend  |   File "/usr/local/lib/python3.11/site-packages/fastapi/routing.py", line 121, in app
+rasa_id_backend  |     await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+rasa_id_backend  |   File "/usr/local/lib/python3.11/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+rasa_id_backend  |     raise exc
+rasa_id_backend  |   File "/usr/local/lib/python3.11/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+rasa_id_backend  |     await app(scope, receive, sender)
+rasa_id_backend  |   File "/usr/local/lib/python3.11/site-packages/fastapi/routing.py", line 107, in app
+rasa_id_backend  |     response = await f(request)
+rasa_id_backend  |                ^^^^^^^^^^^^^^^^
+rasa_id_backend  |   File "/usr/local/lib/python3.11/site-packages/fastapi/routing.py", line 426, in app
+rasa_id_backend  |     raw_response = await run_endpoint_function(
+rasa_id_backend  |                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+rasa_id_backend  |   File "/usr/local/lib/python3.11/site-packages/fastapi/routing.py", line 314, in run_endpoint_function
+rasa_id_backend  |     return await dependant.call(**values)
+rasa_id_backend  |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+rasa_id_backend  |   File "/app/app/api/v1/endpoints/admin_dashboard.py", line 30, in get_summary
+rasa_id_backend  |     return get_admin_summary(db)
+rasa_id_backend  |            ^^^^^^^^^^^^^^^^^^^^^
+rasa_id_backend  |   File "/app/app/services/admin_summary_service.py", line 29, in get_admin_summary
+rasa_id_backend  |     class_requests_total = db.query(func.count(ClassRequest.id)).scalar() or 0
+rasa_id_backend  |                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+rasa_id_backend  |   File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/query.py", line 2835, in scalar
+rasa_id_backend  |     ret = self.one()
+rasa_id_backend  |           ^^^^^^^^^^
+rasa_id_backend  |   File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/query.py", line 2808, in one
+rasa_id_backend  |     return self._iter().one()  # type: ignore
+rasa_id_backend  |            ^^^^^^^^^^^^
+rasa_id_backend  |   File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/query.py", line 2857, in _iter
+rasa_id_backend  |     result: Union[ScalarResult[_T], Result[_T]] = self.session.execute(
+rasa_id_backend  |                                                   ^^^^^^^^^^^^^^^^^^^^^
+rasa_id_backend  |   File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/session.py", line 2351, in execute
+rasa_id_backend  |     return self._execute_internal(
+rasa_id_backend  |            ^^^^^^^^^^^^^^^^^^^^^^^
+rasa_id_backend  |   File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/session.py", line 2249, in _execute_internal
+rasa_id_backend  |     result: Result[Any] = compile_state_cls.orm_execute_statement(
+rasa_id_backend  |                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+rasa_id_backend  |   File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/context.py", line 306, in orm_execute_statement
+rasa_id_backend  |     result = conn.execute(
+rasa_id_backend  |              ^^^^^^^^^^^^^
+rasa_id_backend  |   File "/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py", line 1419, in execute
+rasa_id_backend  |     return meth(
+rasa_id_backend  |            ^^^^^
+rasa_id_backend  |   File "/usr/local/lib/python3.11/site-packages/sqlalchemy/sql/elements.py", line 527, in _execute_on_connection
+rasa_id_backend  |     return connection._execute_clauseelement(
+rasa_id_backend  |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+rasa_id_backend  |   File "/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py", line 1641, in _execute_clauseelement
+rasa_id_backend  |     ret = self._execute_context(
+rasa_id_backend  |           ^^^^^^^^^^^^^^^^^^^^^^
+rasa_id_backend  |   File "/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py", line 1846, in _execute_context
+rasa_id_backend  |     return self._exec_single_context(
+rasa_id_backend  |            ^^^^^^^^^^^^^^^^^^^^^^^^^^
+rasa_id_backend  |   File "/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py", line 1986, in _exec_single_context
+rasa_id_backend  |     self._handle_dbapi_exception(
+rasa_id_backend  |   File "/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py", line 2363, in _handle_dbapi_exception
+rasa_id_backend  |     raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+rasa_id_backend  |   File "/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py", line 1967, in _exec_single_context
+rasa_id_backend  |     self.dialect.do_execute(
+rasa_id_backend  |   File "/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/default.py", line 952, in do_execute
+rasa_id_backend  |     cursor.execute(statement, parameters)
+rasa_id_backend  | sqlalchemy.exc.ProgrammingError: (psycopg2.errors.UndefinedTable) relation "class_requests" does not exist
+rasa_id_backend  | LINE 2: FROM class_requests
+rasa_id_backend  |              ^
+rasa_id_backend  | 
+rasa_id_backend  | [SQL: SELECT count(class_requests.id) AS count_1 
+rasa_id_backend  | FROM class_requests]
+rasa_id_backend  | (Background on this error at: https://sqlalche.me/e/20/f405)
+rasa_id_backend  | INFO:api_access:{"request_id": "96456dfc-525a-4e27-b5a9-827c2131ec2d", "method": "GET", "path": "/api/v1/admin/model/status", "status_code": 200, "latency_ms": 14.26, "ip": "172.18.0.4"}
+rasa_id_backend  | INFO:     172.18.0.4:40064 - "GET /api/v1/admin/model/status HTTP/1.1" 200 OK
+rasa_id_backend  | INFO:api_access:{"request_id": "d8c712b6-4b1a-4546-b03b-5cd58d0f35ea", "method": "GET", "path": "/api/v1/health", "status_code": 200, "latency_ms": 19.42, "ip": "172.18.0.4"}
+rasa_id_backend  | INFO:     172.18.0.4:41448 - "GET /api/v1/health HTTP/1.1" 200 OK
+rasa_id_backend  | INFO:api_access:{"request_id": "c12d7cb5-6686-44be-b314-72254a40aca1", "method": "GET", "path": "/api/v1/admin/mappings", "status_code": 200, "latency_ms": 30.35, "ip": "172.18.0.4"}
+rasa_id_backend  | INFO:     172.18.0.4:54330 - "GET /api/v1/admin/mappings?limit=50 HTTP/1.1" 200 OK
+rasa_id_backend  | INFO:api_access:{"request_id": "bd93ffed-5f28-4822-a358-65892ed0fbf2", "method": "GET", "path": "/api/v1/tkpi/search", "status_code": 200, "latency_ms": 32.3, "ip": "172.18.0.4"}
+rasa_id_backend  | INFO:     172.18.0.4:48316 - "GET /api/v1/tkpi/search?q=telur&limit=10 HTTP/1.1" 200 OK
+rasa_id_backend  | INFO:api_access:{"request_id": "67fb8d49-8233-41d5-8715-1f009595988a", "method": "GET", "path": "/api/v1/tkpi/search", "status_code": 200, "latency_ms": 2.56, "ip": "172.18.0.4"}
+rasa_id_backend  | INFO:     172.18.0.4:48332 - "GET /api/v1/tkpi/search?q=telur&limit=10 HTTP/1.1" 200 OK
+rasa_id_backend  | INFO:     172.18.0.4:47220 - "GET /api/v1/tkpi/search?q=telur&limit=10 HTTP/1.1" 200 OK
+rasa_id_backend  | INFO:api_access:{"request_id": "65d5e717-fd65-4583-aaa1-d1030ffd5fda", "method": "GET", "path": "/api/v1/tkpi/search", "status_code": 200, "latency_ms": 3.45, "ip": "172.18.0.4"}
+rasa_id_backend  | INFO:api_access:{"request_id": "23c0fc98-eed6-4ad3-9513-e5c2f632ec62", "method": "POST", "path": "/api/v1/admin/mappings", "status_code": 200, "latency_ms": 46.01, "ip": "172.18.0.4"}
+rasa_id_backend  | INFO:     172.18.0.4:47234 - "POST /api/v1/admin/mappings HTTP/1.1" 200 OK
+rasa_id_backend  | INFO:api_access:{"request_id": "eff5c171-350c-40b5-ba14-3878a7ff9e82", "method": "GET", "path": "/api/v1/admin/mappings", "status_code": 200, "latency_ms": 4.49, "ip": "172.18.0.4"}
+rasa_id_backend  | INFO:     172.18.0.4:47244 - "GET /api/v1/admin/mappings?limit=50 HTTP/1.1" 200 OK
+rasa_id_backend  | INFO:api_access:{"request_id": "2f3e6917-5ada-4352-8aeb-1ccaf55eb355", "method": "GET", "path": "/api/v1/tkpi/search", "status_code": 200, "latency_ms": 2.7, "ip": "172.18.0.4"}
+rasa_id_backend  | INFO:     172.18.0.4:47246 - "GET /api/v1/tkpi/search?q=telur&limit=10 HTTP/1.1" 200 OK
+rasa_id_backend  | INFO:app.services.detection_service:{'event': 'inference_complete', 'request_id': 'f105dbf1-8e6e-4f0b-9922-a0995d38c3f1', 'inference_ms': 176.29, 'num_items': 2, 'model_path': 'active.pt', 'sha256': '6b211dca764a', 'loaded_at': '2026-03-11T05:26:13.450752Z', 'conf': 0.5, 'iou': 0.45}
+rasa_id_backend  | INFO:api_access:{"request_id": "f105dbf1-8e6e-4f0b-9922-a0995d38c3f1", "method": "POST", "path": "/api/v1/detect", "status_code": 200, "latency_ms": 210.52, "ip": "172.18.0.1"}
+rasa_id_backend  | INFO:     172.18.0.1:34910 - "POST /api/v1/detect HTTP/1.1" 200 OK
