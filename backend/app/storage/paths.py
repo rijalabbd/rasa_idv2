@@ -4,7 +4,8 @@ from datetime import datetime
 from pathlib import Path
 from app.core.paths import (
     STORAGE_DIR, UPLOADS_DIR, FEEDBACK_DIR, FEEDBACK_IMAGES_DIR, 
-    FEEDBACK_LABELS_DIR, CLASS_REQUESTS_DIR, CLASS_REQUESTS_IMAGES_DIR
+    FEEDBACK_LABELS_DIR, CLASS_REQUESTS_DIR, CLASS_REQUESTS_IMAGES_DIR,
+    MISSED_DETECTION_IMAGES_DIR
 )
 
 
@@ -85,5 +86,19 @@ def get_class_request_label_path(image_filename: str) -> tuple[str, str]:
     absolute_path = str(CLASS_REQUESTS_DIR / "labels" / filename)
     
     Path(absolute_path).parent.mkdir(parents=True, exist_ok=True)
-    
+
+    return relative_path, absolute_path
+
+
+def get_missed_detection_image_path(extension: str = "jpg") -> tuple[str, str]:
+    """
+    Generate missed detection image path: storage/missed_detection/images/<uuid>.ext
+    Returns: (relative_path, absolute_path)
+    """
+    filename = f"{uuid.uuid4().hex}.{extension}"
+    relative_path = os.path.join("missed_detection", "images", filename)
+    absolute_path = str(MISSED_DETECTION_IMAGES_DIR / filename)
+
+    Path(absolute_path).parent.mkdir(parents=True, exist_ok=True)
+
     return relative_path, absolute_path

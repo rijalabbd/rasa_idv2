@@ -24,6 +24,10 @@ FEEDBACK_LABELS_DIR = FEEDBACK_DIR / "labels"
 CLASS_REQUESTS_DIR = STORAGE_DIR / "class_requests"
 CLASS_REQUESTS_IMAGES_DIR = CLASS_REQUESTS_DIR / "images"
 
+# Missed detection dataset
+MISSED_DETECTION_DIR = STORAGE_DIR / "missed_detection"
+MISSED_DETECTION_IMAGES_DIR = MISSED_DETECTION_DIR / "images"
+
 # Export output directories - production exports from admin endpoints
 EXPORTS_DIR = STORAGE_DIR / "exports"
 EXPORTS_FEEDBACK_DIR = EXPORTS_DIR / "feedback"
@@ -44,6 +48,7 @@ def ensure_storage_dirs():
         FEEDBACK_IMAGES_DIR,
         FEEDBACK_LABELS_DIR,
         CLASS_REQUESTS_IMAGES_DIR,
+        MISSED_DETECTION_IMAGES_DIR,
         EXPORTS_FEEDBACK_DIR,
         EXPORTS_CLASS_REQUESTS_DIR,
         TEMP_TEST_DATA_DIR,

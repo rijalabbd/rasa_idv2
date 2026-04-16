@@ -1,6 +1,6 @@
 from sqlalchemy import Column, Integer, String, DateTime, Float
 from sqlalchemy.orm import relationship
-from datetime import datetime
+from sqlalchemy.sql import func
 from app.db.base import Base
 
 
@@ -11,7 +11,7 @@ class Analysis(Base):
     
     id = Column(Integer, primary_key=True)
     image_path = Column(String(500), nullable=False)
-    created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     model_version = Column(String(100), nullable=False, default="best.pt")
     conf_threshold = Column(Float, nullable=False, default=0.5)
     

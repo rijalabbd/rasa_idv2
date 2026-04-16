@@ -11,6 +11,7 @@ import csv
 import hashlib
 import streamlit as st
 from utils.api import api_request
+from utils.icons import h1, h2, icon_md
 
 
 def _file_sha256(file_bytes: bytes) -> str:
@@ -19,10 +20,7 @@ def _file_sha256(file_bytes: bytes) -> str:
 
 
 def _call_import(uploaded_file, dry_run: bool) -> tuple[dict | None, int, str | None]:
-    """Call the TKPI import endpoint.
-
-    Returns (data, http_status, ref_id).
-    """
+    """Call the TKPI import endpoint. Returns (data, http_status, ref_id)."""
     uploaded_file.seek(0)
     files = {"file": (uploaded_file.name, uploaded_file.getvalue(), "text/csv")}
     params = {"dry_run": str(dry_run).lower()}
@@ -35,8 +33,6 @@ def _call_import(uploaded_file, dry_run: bool) -> tuple[dict | None, int, str | 
     if headers:
         ref_id = headers.get("x-request-id") or st.session_state.get("last_request_id")
 
-    if status == 200 and isinstance(data, dict):
-        return data, status, ref_id
     return data, status, ref_id
 
 
@@ -47,20 +43,20 @@ def _show_error_banner(data, status: int, ref_id: str | None, action: str):
     if isinstance(data, dict):
         detail = data.get("detail", "Unknown error")
         code = data.get("code", "ERROR")
-        st.error(f"❌ {action} failed — HTTP {status} · {code}: {detail}{ref_part}")
+        st.error(f"{action} failed — HTTP {status} · {code}: {detail}{ref_part}")
     elif isinstance(data, (str, bytes)):
         body = data[:200] if isinstance(data, str) else data.decode("utf-8", errors="replace")[:200]
-        st.error(f"❌ {action} failed — HTTP {status}: {body}{ref_part}")
+        st.error(f"{action} failed — HTTP {status}: {body}{ref_part}")
     else:
-        st.error(f"❌ {action} failed — HTTP {status}{ref_part}")
+        st.error(f"{action} failed — HTTP {status}{ref_part}")
 
 
 def _show_summary(result: dict, ref_id: str | None):
     """Display import summary metrics."""
     dry_run = result.get("dry_run", True)
-    mode_label = "🔍 Dry-run Result" if dry_run else "✅ Commit Result"
+    mode_label = "Dry-run Result" if dry_run else "Commit Result"
 
-    st.subheader(mode_label)
+    st.markdown(h2("search" if dry_run else "check-circle", mode_label), unsafe_allow_html=True)
 
     if ref_id:
         st.caption(f"Ref: `{ref_id}`")
@@ -79,7 +75,6 @@ def _show_summary(result: dict, ref_id: str | None):
         c5.metric("Inserted", result.get("inserted_count", 0))
         c6.metric("Updated", result.get("updated_count", 0))
     c7.metric("Warnings", result.get("warnings_count", 0))
-    # Show the other count pair in the 4th column
     if dry_run:
         c8.metric("Existing in DB", result.get("existing_count", 0))
     else:
@@ -95,22 +90,29 @@ def _show_issues(result: dict, kind: str):
     if count == 0:
         return
 
-    icon = "❌" if kind == "errors" else "⚠️"
     label = "Errors" if kind == "errors" else "Warnings"
+    expander_icon = "x-circle" if kind == "errors" else "alert-triangle"
 
-    with st.expander(f"{icon} {label} ({count})", expanded=(kind == "errors")):
+    with st.expander(
+        f"{label} ({count})",
+        expanded=(kind == "errors")
+    ):
+        st.markdown(
+            icon_md(expander_icon, f"{count} {label}", size=14),
+            unsafe_allow_html=True
+        )
         if truncated:
             st.info(f"Showing first {len(items)} of {count} {kind}.")
 
-        # Table
         display = items[:20]
-        table_data = []
-        for item in display:
-            table_data.append({
+        table_data = [
+            {
                 "Row": item.get("row_number", ""),
                 "TKPI Code": item.get("tkpi_code") or "—",
                 "Message": item.get("message", ""),
-            })
+            }
+            for item in display
+        ]
 
         if table_data:
             st.dataframe(table_data, use_container_width=True, hide_index=True)
@@ -118,7 +120,6 @@ def _show_issues(result: dict, kind: str):
         if len(items) > 20:
             st.caption(f"... and {len(items) - 20} more (download CSV for full list)")
 
-        # Download CSV
         if items:
             csv_buf = io.StringIO()
             writer = csv.DictWriter(csv_buf, fieldnames=["row_number", "tkpi_code", "message"])
@@ -130,7 +131,7 @@ def _show_issues(result: dict, kind: str):
                     "message": item.get("message", ""),
                 })
             st.download_button(
-                f"📥 Download {label} CSV",
+                f"Download {label} CSV",
                 csv_buf.getvalue(),
                 file_name=f"tkpi_import_{kind}.csv",
                 mime="text/csv",
@@ -140,7 +141,7 @@ def _show_issues(result: dict, kind: str):
 
 def render_tkpi_import():
     """Render the TKPI CSV Import view."""
-    st.title("📊 TKPI CSV Import")
+    st.markdown(h1("database", "TKPI CSV Import"), unsafe_allow_html=True)
     st.caption("Upload CSV → Validate (dry-run) → Review → Commit")
     st.divider()
 
@@ -157,9 +158,11 @@ def render_tkpi_import():
         file_bytes = uploaded_file.getvalue()
         size_kb = len(file_bytes) / 1024
         current_hash = _file_sha256(file_bytes)
-        st.info(f"📄 **{uploaded_file.name}** — {size_kb:.1f} KB")
+        st.markdown(
+            icon_md("file-text", f"**{uploaded_file.name}** — {size_kb:.1f} KB", size=16),
+            unsafe_allow_html=True
+        )
     else:
-        # Clear results when file is removed
         st.session_state.tkpi_import_result = None
         st.session_state.tkpi_import_ref = None
         st.session_state.tkpi_commit_result = None
@@ -168,18 +171,17 @@ def render_tkpi_import():
 
     st.divider()
 
-    # ── Dry-run button ───────────────────────────────────────────────
+    # ── Dry-run + Commit buttons ─────────────────────────────────────
     col_dry, col_commit = st.columns(2)
 
     with col_dry:
         dry_disabled = uploaded_file is None
         if st.button(
-            "🔍 Validate (Dry-run)",
+            "Validate (Dry-run)",
             disabled=dry_disabled,
             use_container_width=True,
             type="primary",
         ):
-            # Clear previous state
             st.session_state.tkpi_import_result = None
             st.session_state.tkpi_import_ref = None
             st.session_state.tkpi_commit_result = None
@@ -192,7 +194,6 @@ def render_tkpi_import():
             if status == 200 and data:
                 st.session_state.tkpi_import_result = data
                 st.session_state.tkpi_import_ref = ref
-                # Store hash of validated file
                 st.session_state.tkpi_validated_hash = current_hash
             else:
                 st.session_state.tkpi_import_result = None
@@ -210,19 +211,18 @@ def render_tkpi_import():
     )
 
     if file_changed:
-        st.warning("🔄 File changed since validation. Please run **Validate (Dry-run)** again.")
+        st.warning("File changed since validation. Please run **Validate (Dry-run)** again.")
 
-    # ── Commit gate: conditions ──────────────────────────────────────
+    # ── Commit gate ──────────────────────────────────────────────────
     has_dry_run = dry_result is not None
     has_zero_errors = has_dry_run and dry_result.get("errors_count", 1) == 0
     hash_matches = not file_changed and validated_hash is not None
     file_present = uploaded_file is not None
 
-    # Confirmation checkbox
     confirm_checked = False
     if has_dry_run and has_zero_errors and file_present and hash_matches:
         confirm_checked = st.checkbox(
-            "⚠️ I understand this will write to the database",
+            "I understand this will write to the database",
             key="tkpi_commit_confirm",
         )
 
@@ -234,10 +234,9 @@ def render_tkpi_import():
         and confirm_checked
     )
 
-    # ── Commit button ────────────────────────────────────────────────
     with col_commit:
         if st.button(
-            "✅ Commit Import",
+            "Commit Import",
             disabled=not can_commit,
             use_container_width=True,
             type="secondary",
@@ -251,14 +250,14 @@ def render_tkpi_import():
             if status == 200 and data:
                 st.session_state.tkpi_commit_result = data
                 st.session_state.tkpi_commit_ref = ref
-                st.toast("✅ Import committed successfully!")
+                st.toast("Import committed successfully!")
             else:
                 _show_error_banner(data, status, ref, "Commit")
 
             st.rerun()
 
     if not can_commit and has_dry_run and not has_zero_errors:
-        st.warning("⚠️ Cannot commit: fix CSV errors first, then re-validate.")
+        st.warning("Cannot commit: fix CSV errors first, then re-validate.")
 
     st.divider()
 
@@ -271,7 +270,7 @@ def render_tkpi_import():
         _show_issues(commit_result, "errors")
         _show_issues(commit_result, "warnings")
         st.success(
-            f"✅ Import committed: "
+            f"Import committed: "
             f"{commit_result.get('inserted_count', 0)} inserted, "
             f"{commit_result.get('updated_count', 0)} updated"
         )
@@ -284,13 +283,12 @@ def render_tkpi_import():
 
     # ── Current TKPI Data Preview ────────────────────────────────────
     st.divider()
-    st.subheader("📋 Data TKPI Saat Ini")
+    st.markdown(h2("list", "Data TKPI Saat Ini"), unsafe_allow_html=True)
 
-    if st.button("🔄 Refresh Data", key="tkpi_refresh"):
+    if st.button("Refresh Data", key="tkpi_refresh"):
         st.session_state.tkpi_preview_data = None
         st.rerun()
 
-    # Load data
     if st.session_state.get("tkpi_preview_data") is None:
         data, status, _, _ = api_request("GET", "/admin/tkpi/list", params={"limit": 500})
         if status == 200 and isinstance(data, dict):
@@ -305,9 +303,8 @@ def render_tkpi_import():
     st.caption(f"Total: **{total}** item dalam database")
 
     if items:
-        table = []
-        for item in items:
-            table.append({
+        table = [
+            {
                 "Kode": item.get("tkpi_code", ""),
                 "Nama": item.get("name", ""),
                 "Energi (kcal)": item.get("energi_kal") or "—",
@@ -315,7 +312,9 @@ def render_tkpi_import():
                 "Lemak (g)": item.get("lemak_g") or "—",
                 "Karbo (g)": item.get("karbo_g") or "—",
                 "Serat (g)": item.get("serat_g") or "—",
-            })
+            }
+            for item in items
+        ]
         st.dataframe(table, use_container_width=True, hide_index=True, height=400)
     else:
         st.info("Belum ada data TKPI. Upload CSV untuk memulai.")

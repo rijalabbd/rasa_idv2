@@ -14,6 +14,10 @@ export default function ManualSearch() {
   const [selectedFood, setSelectedFood] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  // ── Fuzzy search toggle ──────────────────────────────────────────────────
+  // true  = token-based (e.g. "nasi goreng" matches "goreng nasi, dimasak")
+  // false = exact-phrase ILIKE (original behaviour)
+  const [fuzzyEnabled, setFuzzyEnabled] = useState(true);
 
   const handleSearch = async (e) => {
     e.preventDefault();
@@ -28,7 +32,7 @@ export default function ManualSearch() {
     setSelectedFood(null);
 
     try {
-      const results = await searchTkpi(query, 20);
+      const results = await searchTkpi(query, 20, fuzzyEnabled);
       setSearchResults(results);
       
       if (results.length === 0) {
@@ -69,7 +73,7 @@ export default function ManualSearch() {
 
       <Card>
         <form onSubmit={handleSearch} className="space-y-4">
-          <div className="flex gap-2">
+          <div className="flex gap-2 items-center">
             <Input 
               type="text"
               placeholder="Cari makanan di database TKPI..."
@@ -84,6 +88,38 @@ export default function ManualSearch() {
             >
               {loading ? <Spinner size="sm" /> : 'Cari'}
             </Button>
+          </div>
+
+          {/* ── Fuzzy toggle ─────────────────────────────────────────── */}
+          <div className="flex items-center gap-3 pt-1">
+            <button
+              type="button"
+              id="fuzzy-toggle"
+              onClick={() => setFuzzyEnabled(prev => !prev)}
+              aria-pressed={fuzzyEnabled}
+              className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 transition-colors duration-200 focus:outline-none ${
+                fuzzyEnabled
+                  ? 'bg-blue-600 border-blue-600'
+                  : 'bg-gray-200 border-gray-200'
+              }`}
+            >
+              <span
+                className={`inline-block h-4 w-4 rounded-full bg-white shadow transform transition-transform duration-200 ${
+                  fuzzyEnabled ? 'translate-x-4' : 'translate-x-0'
+                }`}
+              />
+            </button>
+            <label
+              htmlFor="fuzzy-toggle"
+              className="text-sm text-gray-600 select-none cursor-pointer"
+            >
+              <span className="font-semibold text-gray-800">Fuzzy Search</span>
+              {' '}—{' '}
+              {fuzzyEnabled
+                ? <span className="text-blue-600 font-medium">Aktif (token-based)</span>
+                : <span className="text-gray-500 font-medium">Nonaktif (exact-phrase)</span>
+              }
+            </label>
           </div>
 
           {error && (

@@ -3,15 +3,17 @@ from app.api.v1.endpoints import (
     health, tkpi, detection, feedback, missed_detection,
     admin_feedback, class_requests, admin_class_requests, 
     admin_dashboard, admin_mappings, admin_export, admin_yolo_export,
-    admin_tkpi_import
+    admin_tkpi_import, detectable_foods
 )
 from app.core.security import get_admin_api_key
 from app.core.rate_limit import rate_limit_detect, rate_limit_feedback
+
 
 router = APIRouter()
 
 router.include_router(health.router, tags=["Health"])
 router.include_router(tkpi.router, prefix="/tkpi", tags=["TKPI"])
+router.include_router(detectable_foods.router, tags=["Detection"])
 router.include_router(detection.router, prefix="/detect", tags=["Detection"], dependencies=[Depends(rate_limit_detect)])
 router.include_router(feedback.router, prefix="/feedback", tags=["Feedback"], dependencies=[Depends(rate_limit_feedback)])
 router.include_router(missed_detection.router, prefix="/missed-detection", tags=["Feedback"])

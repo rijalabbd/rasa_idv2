@@ -136,7 +136,9 @@ def process_detection(
                     protein_g=tkpi_food.protein_g or 0,
                     lemak_g=tkpi_food.lemak_g or 0,
                     karbo_g=tkpi_food.karbo_g or 0,
-                    serat_g=tkpi_food.serat_g,
+                    # serat_g uses `or 0` like other fields for frontend consistency
+                    # (schema allows Optional, but we normalize to 0 for uniform handling)
+                    serat_g=tkpi_food.serat_g or 0,
                 ),
             ) if tkpi_food else None,
             nutrition_status=nutrition_status,

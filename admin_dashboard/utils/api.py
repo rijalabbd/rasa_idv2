@@ -8,8 +8,19 @@ from datetime import datetime
 # =============================================================================
 
 API_BASE_URL = os.environ.get("ADMIN_API_BASE_URL", "http://localhost:8000")
-ADMIN_KEY = os.environ.get("ADMIN_KEY", "admin_secret_123")
 API_TIMEOUT = 30  # seconds
+
+# ADMIN_KEY is required — must be set via environment variable.
+# No default value to prevent accidental use of insecure keys in production.
+_admin_key = os.environ.get("ADMIN_KEY")
+if not _admin_key:
+    st.error(
+        "⚠️ **Environment variable `ADMIN_KEY` is not set.** "
+        "Dashboard cannot authenticate with the backend API. "
+        "Set it via: `export ADMIN_KEY=your_secret_key` or in your `.env` file."
+    )
+    st.stop()
+ADMIN_KEY = _admin_key
 
 def api_url(path: str) -> str:
     """Build full API URL from path."""

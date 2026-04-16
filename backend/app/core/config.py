@@ -5,8 +5,8 @@ from typing import List
 class Settings(BaseSettings):
     """Application settings loaded from environment variables."""
     
-    # Database
-    DATABASE_URL: str = "postgresql+psycopg2://postgres:password@localhost:5432/rasa_id_db"
+    # Database — REQUIRED: must be set via .env or environment variable
+    DATABASE_URL: str
     
     # Storage
     STORAGE_PATH: str = "./storage"
@@ -23,6 +23,10 @@ class Settings(BaseSettings):
     MAX_UPLOAD_SIZE: int = 10 * 1024 * 1024  # 10MB default
     DETECT_TIMEOUT_SECONDS: int = 30
     DETECT_MAX_CONCURRENCY: int = 2
+
+    # Feature Flags
+    # Set TKPI_FUZZY_SEARCH=false in .env to disable token-based fuzzy search
+    TKPI_FUZZY_SEARCH: bool = True
     
     model_config = SettingsConfigDict(
         env_file=".env",

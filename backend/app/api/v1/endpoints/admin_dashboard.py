@@ -13,6 +13,23 @@ from app.core.rate_limit import rate_limit_upload
 
 router = APIRouter()
 
+# ---------------------------------------------------------------------------
+# Model Classes Endpoint
+# ---------------------------------------------------------------------------
+
+@router.get("/model/classes")
+def get_model_classes():
+    """Return list of YOLO class IDs and names from the active model.
+    Returns a JSON with a loaded flag, source identifier, and classes array.
+    """
+    from app.services.model_manager import get_class_names
+    classes = get_class_names()
+    return {
+        "loaded": len(classes) > 0,
+        "source": "active.pt",
+        "classes": classes,
+    }
+
 
 @router.get("/summary")
 async def get_summary(db: Session = Depends(get_db)):

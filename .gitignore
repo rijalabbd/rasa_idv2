@@ -1,63 +1,169 @@
-# Python
+# =============================================================================
+# RASA-ID .gitignore
+# =============================================================================
+# Panduan:
+#   - Folder ml/ seluruhnya TIDAK di-commit (training dataset, model, hasil run)
+#   - Runtime data di backend/storage/ TIDAK di-commit (gambar user, feedback)
+#   - Secret & config lokal TIDAK di-commit
+#   - Struktur folder dijaga via .gitkeep
+# =============================================================================
+
+# =============================================================================
+# ML FOLDER — Seluruh folder ml/ dikecualikan (besar & untuk training lokal)
+# =============================================================================
+ml/
+
+# =============================================================================
+# BACKEND — Runtime Storage (data user, feedback, model)
+# =============================================================================
+
+# Gambar upload dari user
+backend/storage/uploads/
+
+# Data feedback aktif (gambar & label YOLO)
+backend/storage/feedback/images/
+backend/storage/feedback/labels/
+
+# Data class request
+backend/storage/class_requests/images/
+
+# Data missed detection
+backend/storage/missed_detection/images/
+
+# Hasil export dataset ZIP
+backend/storage/exports/
+
+# Temp / quarantine
+backend/storage/temp/
+
+# Model YOLO (biasanya > 100MB, simpan terpisah atau deploy via CI/CD)
+backend/storage/models/*.pt
+backend/storage/models/*.pt.tmp
+
+# Jaga struktur direktori storage tetap ada di repo
+!backend/storage/**/.gitkeep
+!backend/storage/README.md
+
+# Database lokal (kalau pakai SQLite)
+*.db
+*.sqlite3
+backend/*.db
+
+# =============================================================================
+# PYTHON
+# =============================================================================
 __pycache__/
 *.py[cod]
 *$py.class
 *.so
+*.pyd
 .Python
 *.egg-info/
 .eggs/
 dist/
 build/
+*.whl
 
 # Virtual environments
 .venv/
 backend/.venv/
 venv/
 ENV/
+env/
 
-# IDE
+# Pytest
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+
+# MyPy
+.mypy_cache/
+.dmypy.json
+
+# =============================================================================
+# FRONTEND (Node / Vite / React)
+# =============================================================================
+node_modules/
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+
+# Build output
+dist/
+.output/
+
+# =============================================================================
+# ADMIN DASHBOARD (Streamlit / Python)
+# =============================================================================
+admin_dashboard/__pycache__/
+admin_dashboard/.venv/
+admin_dashboard/node_modules/
+
+# =============================================================================
+# SECRETS & ENVIRONMENT
+# =============================================================================
+.env
+.env.local
+.env.*.local
+.env.production
+.env.staging
+
+# Docker override (boleh ada tapi sering punya secret)
+docker-compose.override.yml
+
+# =============================================================================
+# IDE & EDITOR
+# =============================================================================
 .idea/
 .vscode/
 *.swp
 *.swo
+*.sublime-project
+*.sublime-workspace
+.cursor/
 
-# Environment files
-.env
-.env.local
-.env.*.local
+# =============================================================================
+# OS
+# =============================================================================
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+Thumbs.db
+ehthumbs.db
+Desktop.ini
 
-# Backend runtime storage - DO NOT COMMIT
-backend/storage/uploads/
-backend/storage/feedback/images/
-backend/storage/feedback/labels/
-backend/storage/class_requests/images/
-backend/storage/exports/
-backend/storage/temp/
-backend/storage/models/*.pt
-
-# ML workspace - large files
-ml/experiments/
-ml/datasets/*/images/
-ml/datasets/*/labels/
-
-# Keep directory structure (.gitkeep files are allowed)
-!backend/storage/**/.gitkeep
-!ml/**/.gitkeep
-
-# Misc
+# =============================================================================
+# LOGS & TEMP
+# =============================================================================
 *.log
+logs/
+*.tmp
+*.bak
+*.orig
+
+# Archive
 *.zip
 *.tar.gz
-.DS_Store
-Thumbs.db
+*.tar.bz2
+*.rar
+*.7z
 
-# Node modules (admin dashboard)
-node_modules/
-admin_dashboard/node_modules/
-
-# Temporary Artifacts
+# =============================================================================
+# TESTING ARTIFACTS
+# =============================================================================
+test-results/
+playwright-report/
+coverage/
 _temp_artifacts/
 _debug/
 temp_pw_test/
-test-results/
-playwright-report/
+
+# =============================================================================
+# ALEMBIC
+# =============================================================================
+# Jangan ignore alembic/versions/ — migration ini HARUS di-commit!
+# File berikut ini OK untuk di-ignore:
+backend/alembic/__pycache__/

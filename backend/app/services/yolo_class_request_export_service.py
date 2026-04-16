@@ -13,8 +13,8 @@ import csv
 import logging
 import zipfile
 from pathlib import Path
-from datetime import datetime
-from typing import List, Tuple
+from datetime import datetime, timezone
+from typing import List, Tuple, Optional
 
 from PIL import Image
 from sqlalchemy.orm import Session
@@ -52,27 +52,58 @@ def _get_image_dimensions(path: Path) -> Tuple[int, int]:
 
 # ── main export ──────────────────────────────────────────────────────────
 
-def build_yolo_class_request_zip(db: Session) -> Tuple[io.BytesIO, int, int]:
+def build_yolo_class_request_zip(db: Session, only_new: bool = True) -> Tuple[io.BytesIO, int, int, str]:
     """
     Build a YOLO-ready ZIP from class request data.
-    Returns (zip_buffer, exported_count, skipped_count).
+    Includes already detected objects from the original analysis to prevent forgetting.
+    Returns (zip_buffer, exported_count, skipped_count, batch_id).
     """
+    from app.services.export_tracking_service import get_unexported_ids, get_all_ids, mark_exported, generate_batch_id
+    from app.services.feedback_service import get_dynamic_class_map
+    
+    batch_id = generate_batch_id()
+    
+    if only_new:
+        target_ids = get_unexported_ids(db, "class_request")
+    else:
+        target_ids = get_all_ids(db, "class_request")
+
+    if not target_ids:
+        return io.BytesIO(), 0, 0, batch_id
+
     requests = db.execute(
-        select(ClassRequest).order_by(ClassRequest.created_at)
+        select(ClassRequest).where(ClassRequest.id.in_(target_ids)).order_by(ClassRequest.created_at)
     ).scalars().all()
 
-    # Build dynamic class map
-    unique_labels = sorted(set(
-        r.requested_label for r in requests if r.requested_label
-    ))
-    label_to_id = {label: idx for idx, label in enumerate(unique_labels)}
+    # 1. Expand active model class map (get_dynamic_class_map imported above)
+    class_map = get_dynamic_class_map().copy()
+    max_id = max(class_map.values()) if class_map else -1
+    
+    unique_requested = sorted(set(r.requested_label for r in requests if r.requested_label))
+    for req_label in unique_requested:
+        if req_label not in class_map:
+            max_id += 1
+            class_map[req_label] = max_id
+
+    # Sort map by ID for YAML generation
+    sorted_classes = ["unknown"] * (max(class_map.values()) + 1) if class_map else []
+    for lbl, cid in class_map.items():
+        if sorted_classes[cid] == "unknown":
+            sorted_classes[cid] = lbl
+
+    # 2. Fetch original analyses
+    analysis_ids = list(set(r.analysis_id for r in requests if r.analysis_id))
+    from app.models.analysis import Analysis
+    analyses = db.execute(
+        select(Analysis).where(Analysis.id.in_(analysis_ids))
+    ).scalars().all() if analysis_ids else []
+    analyses_map = {a.id: a for a in analyses}
 
     zip_buffer = io.BytesIO()
     exported = 0
     skipped = 0
     metadata_rows: List[dict] = []
 
-    # Aggregate by image to avoid duplicate ZIP entry errors
     grouped = {}
     for req in requests:
         if not req.image_path:
@@ -89,6 +120,8 @@ def build_yolo_class_request_zip(db: Session) -> Tuple[io.BytesIO, int, int]:
         if stem not in grouped:
             grouped[stem] = {"image_path": image_path, "items": []}
         grouped[stem]["items"].append(req)
+
+    from app.services.feedback_service import _get_image_dimensions, _pixel_bbox_to_yolo, _calculate_iou
 
     with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zipf:
         for stem, data in grouped.items():
@@ -118,15 +151,36 @@ def build_yolo_class_request_zip(db: Session) -> Tuple[io.BytesIO, int, int]:
             label_lines = []
             img_exported = 0
             
+            # --- INCLUDE ALREADY DETECTED OBJECTS ---
+            primary_req = reqs[0]
+            if primary_req.analysis_id:
+                analysis = analyses_map.get(primary_req.analysis_id)
+                if analysis and analysis.detections:
+                    for det in analysis.detections:
+                        det_box = (det.bbox_x1, det.bbox_y1, det.bbox_x2, det.bbox_y2)
+                        is_overlap = False
+                        for req in reqs:
+                            if req.bbox_x1 is not None and req.bbox_y1 is not None and req.bbox_x2 is not None and req.bbox_y2 is not None:
+                                req_box = (req.bbox_x1, req.bbox_y1, req.bbox_x2, req.bbox_y2)
+                                if _calculate_iou(det_box, req_box) > 0.5:
+                                    is_overlap = True
+                                    break
+                        
+                        if not is_overlap:
+                            c_id = class_map.get(det.label, 0)
+                            y_c = _pixel_bbox_to_yolo((det.bbox_x1, det.bbox_y1, det.bbox_x2, det.bbox_y2), img_w, img_h)
+                            label_lines.append(f"{c_id} {y_c}\n")
+                            img_exported += 1
+
+            # --- INCLUDE TARGET CLASS REQUESTS ---
             for req in reqs:
                 if not req.requested_label:
                     continue
                     
-                class_id = label_to_id.get(req.requested_label, 0)
+                class_id = class_map.get(req.requested_label, 0)
                 
-                # Use dummy bbox if null (common for full image class requests)
                 if req.bbox_x1 is None or req.bbox_y1 is None or req.bbox_x2 is None or req.bbox_y2 is None:
-                    yolo_coords = "0.500000 0.500000 0.010000 0.010000"
+                    yolo_coords = "0.500000 0.500000 1.000000 1.000000"
                 else:
                     yolo_coords = _pixel_bbox_to_yolo(
                         (req.bbox_x1, req.bbox_y1, req.bbox_x2, req.bbox_y2), img_w, img_h
@@ -154,12 +208,17 @@ def build_yolo_class_request_zip(db: Session) -> Tuple[io.BytesIO, int, int]:
             
             exported += img_exported
 
-        zipf.writestr(f"{PREFIX}/data.yaml", _build_data_yaml(unique_labels))
+        zipf.writestr(f"{PREFIX}/data.yaml", _build_data_yaml(sorted_classes))
         zipf.writestr(f"{PREFIX}/metadata.csv", _build_metadata_csv(metadata_rows))
 
     zip_buffer.seek(0)
-    logger.info(f"YOLO class request export: {exported} exported, {skipped} skipped")
-    return zip_buffer, exported, skipped
+    
+    # Mark as exported after successful build
+    exported_ids = [r.id for r in requests]
+    mark_exported(db, "class_request", exported_ids, batch_id)
+
+    logger.info(f"YOLO class request export: {exported} exported, {skipped} skipped (batch {batch_id})")
+    return zip_buffer, exported, skipped, batch_id
 
 
 # ── generators ───────────────────────────────────────────────────────────

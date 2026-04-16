@@ -72,20 +72,28 @@ def import_tkpi_from_csv(csv_path: str, dry_run: bool = False) -> dict:
         if not reader.fieldnames:
             raise ValueError("CSV has no header row")
         
-        missing_cols = [c for c in required_cols if c not in reader.fieldnames]
+        # Support both new format (name) and old format (nama_bahan)
+        name_col = 'name' if 'name' in reader.fieldnames else 'nama_bahan'
+        code_col = 'tkpi_code' if 'tkpi_code' in reader.fieldnames else 'kode_pangan'
+        
+        required_cols_to_check = [name_col, 'energi_kal', 'protein_g', 'lemak_g', 'karbo_g']
+        missing_cols = [c for c in required_cols_to_check if c not in reader.fieldnames]
         if missing_cols:
             raise ValueError(f"Missing required columns: {missing_cols}")
         
-        print(f"📂 Reading {csv_path}")
-        print(f"📋 Columns found: {reader.fieldnames}")
+        print(f"[PROCESS] Reading {csv_path}")
+        print(f"[INFO] Columns found: {reader.fieldnames}")
         print("-" * 50)
         
         for row_num, row in enumerate(reader, start=2):  # Start at 2 (header is 1)
             try:
-                nama = row['nama_bahan'].strip()
+                nama = row[name_col].strip()
                 if not nama:
                     results['skipped'] += 1
                     continue
+                
+                # Extract code column if exists
+                tkpi_code = row.get(code_col, '').strip() or None
                 
                 # Parse numeric values
                 energi = float(row['energi_kal'] or 0)
@@ -101,17 +109,20 @@ def import_tkpi_from_csv(csv_path: str, dry_run: bool = False) -> dict:
                 
                 if existing:
                     # Update existing record
+                    if tkpi_code:
+                        existing.tkpi_code = tkpi_code
                     existing.energi_kal = energi
                     existing.protein_g = protein
                     existing.lemak_g = lemak
                     existing.karbo_g = karbo
                     existing.serat_g = serat
                     results['updated'] += 1
-                    print(f"🔄 Updated: {nama}")
+                    print(f"[UPDATE] Updated: {nama}")
                 else:
                     # Insert new record
                     food = TKPIFood(
                         name=nama,
+                        tkpi_code=tkpi_code,
                         energi_kal=energi,
                         protein_g=protein,
                         lemak_g=lemak,
@@ -120,18 +131,18 @@ def import_tkpi_from_csv(csv_path: str, dry_run: bool = False) -> dict:
                     )
                     db.add(food)
                     results['inserted'] += 1
-                    print(f"✅ Inserted: {nama}")
+                    print(f"[INSERT] Inserted: {nama}")
                     
             except Exception as e:
                 results['errors'].append(f"Row {row_num}: {str(e)}")
-                print(f"❌ Error row {row_num}: {e}")
+                print(f"[ERROR] Error row {row_num}: {e}")
         
         if dry_run:
-            print("\n⚠️  DRY RUN - Changes NOT committed")
+            print("\n[WARNING] DRY RUN - Changes NOT committed")
             db.rollback()
         else:
             db.commit()
-            print("\n💾 Changes committed to database")
+            print("\n[SUCCESS] Changes committed to database")
             
     finally:
         db.close()
@@ -157,19 +168,19 @@ def main():
     args = parser.parse_args()
     
     print("=" * 50)
-    print("🍚 TKPI Foods CSV Importer")
+    print("TKPI Foods CSV Importer")
     print("=" * 50)
     
     try:
         results = import_tkpi_from_csv(args.file, args.dry_run)
         
         print("\n" + "=" * 50)
-        print("📊 Import Summary")
+        print("Import Summary")
         print("=" * 50)
-        print(f"✅ Inserted: {results['inserted']}")
-        print(f"🔄 Updated:  {results['updated']}")
-        print(f"⏭️  Skipped:  {results['skipped']}")
-        print(f"❌ Errors:   {len(results['errors'])}")
+        print(f"Inserted: {results['inserted']}")
+        print(f"Updated:  {results['updated']}")
+        print(f"Skipped:  {results['skipped']}")
+        print(f"Errors:   {len(results['errors'])}")
         
         if results['errors']:
             print("\nErrors:")
@@ -177,10 +188,10 @@ def main():
                 print(f"  - {err}")
                 
         total = results['inserted'] + results['updated']
-        print(f"\n🎉 Total records processed: {total}")
+        print(f"\nTotal records processed: {total}")
         
     except Exception as e:
-        print(f"\n❌ Import failed: {e}")
+        print(f"\n[FATAL ERROR] Import failed: {e}")
         sys.exit(1)
 
 

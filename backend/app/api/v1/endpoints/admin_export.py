@@ -12,6 +12,7 @@ router = APIRouter()
 @router.get("/export-zip")
 async def export_combined_data(
     request: Request,
+    mode: str = "new",
     db: Session = Depends(get_db),
     admin_key: str = Depends(get_admin_api_key)
 ):
@@ -20,9 +21,10 @@ async def export_combined_data(
     Core requirement for Phase 1A.
     """
     audit = AuditService(db)
-    audit.log_action("ADMIN_EXPORT_ZIP", request, admin_key)
+    audit.log_action(f"ADMIN_EXPORT_COMBINED_MODE_{mode.upper()}", request, admin_key)
     
-    zip_buffer = build_combined_export_zip(db)
+    only_new = (mode == "new")
+    zip_buffer, batch_id = build_combined_export_zip(db, only_new=only_new)
     
     filename = f"rasa_id_export_{datetime.now().strftime('%Y%m%d_%H%M%S')}.zip"
     
@@ -30,6 +32,7 @@ async def export_combined_data(
         zip_buffer,
         media_type="application/zip",
         headers={
-            "Content-Disposition": f"attachment; filename={filename}"
+            "Content-Disposition": f"attachment; filename={filename}",
+            "X-Export-Batch-ID": batch_id
         }
     )

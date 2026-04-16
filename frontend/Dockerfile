@@ -22,5 +22,6 @@ COPY . .
 # Expose Vite dev server port
 EXPOSE 5173
 
-# Start development server
-CMD ["npm", "run", "dev"]
+# Start: install any new deps (from mounted package.json), then run dev server
+# This ensures newly added packages are available without manual rebuild
+CMD ["sh", "-c", "npm install --prefer-offline && npm run dev"]

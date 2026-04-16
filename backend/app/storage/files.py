@@ -9,6 +9,7 @@ from app.storage.paths import (
     get_feedback_image_path,
     get_feedback_label_path,
     get_class_request_image_path,
+    get_missed_detection_image_path,
 )
 from app.core.paths import STORAGE_DIR
 
@@ -185,11 +186,55 @@ def write_yolo_label_file(
 
     return Path(relative_label_path).as_posix()
 
+def copy_image_for_missed_detection(source_path: str) -> str:
+    """
+    Copy analysis image to missed_detection/images/ directory.
+    Returns: relative path to the copied file (POSIX-style)
+
+    Raises:
+        FileNotFoundError: if source file doesn't exist
+        Exception: if copy fails or copied file is invalid
+    """
+    extension = Path(source_path).suffix.lstrip(".").lower()
+    if extension not in ["jpg", "jpeg", "png"]:
+        extension = "jpg"
+
+    relative_path, absolute_path = get_missed_detection_image_path(extension)
+    source_absolute = STORAGE_DIR / source_path
+
+    # Verify source file exists
+    if not source_absolute.exists():
+        raise FileNotFoundError(f"Source image not found: {source_absolute}")
+
+    # Verify source file is readable and has content
+    source_size = source_absolute.stat().st_size
+    if source_size == 0:
+        raise Exception(f"Source image is empty (0 bytes): {source_absolute}")
+
+    # Copy file
+    shutil.copy2(source_absolute, absolute_path)
+
+    # Verify copied file exists and has same size
+    dest_path = Path(absolute_path)
+    if not dest_path.exists():
+        raise Exception(f"Copy failed: destination file not created: {absolute_path}")
+
+    dest_size = dest_path.stat().st_size
+    if dest_size != source_size:
+        raise Exception(f"Copy failed: size mismatch (source={source_size}, dest={dest_size})")
+
+    print(f"✅ Missed detection image copied: {source_absolute} -> {absolute_path} ({source_size} bytes)")
+
+    return Path(relative_path).as_posix()
 
 def copy_image_for_class_request(source_path: str) -> str:
     """
     Copy analysis image to class_requests/images directory.
     Returns: relative path to the copied file (POSIX-style)
+
+    Raises:
+        FileNotFoundError: if source file doesn't exist
+        Exception: if copy fails or copied file is invalid
     """
     extension = Path(source_path).suffix.lstrip(".").lower()
     if extension not in ["jpg", "jpeg", "png"]:
@@ -198,5 +243,27 @@ def copy_image_for_class_request(source_path: str) -> str:
     relative_path, absolute_path = get_class_request_image_path(extension)
     source_absolute = STORAGE_DIR / source_path
 
+    # Verify source file exists
+    if not source_absolute.exists():
+        raise FileNotFoundError(f"Source image not found: {source_absolute}")
+
+    # Verify source file is readable and has content
+    source_size = source_absolute.stat().st_size
+    if source_size == 0:
+        raise Exception(f"Source image is empty (0 bytes): {source_absolute}")
+
+    # Copy file
     shutil.copy2(source_absolute, absolute_path)
+
+    # Verify copied file exists and has same size
+    dest_path = Path(absolute_path)
+    if not dest_path.exists():
+        raise Exception(f"Copy failed: destination file not created: {absolute_path}")
+
+    dest_size = dest_path.stat().st_size
+    if dest_size != source_size:
+        raise Exception(f"Copy failed: size mismatch (source={source_size}, dest={dest_size})")
+
+    print(f"✅ Class request image copied: {source_absolute} -> {absolute_path} ({source_size} bytes)")
+
     return Path(relative_path).as_posix()

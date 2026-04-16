@@ -50,4 +50,11 @@ echo "✅ Migrations complete!"
 
 # Start the application
 echo "🌐 Starting uvicorn server..."
-exec uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+
+if [ "${APP_ENV}" = "production" ]; then
+    echo "🏭 Mode: PRODUCTION (4 workers, no hot-reload)"
+    exec uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 4
+else
+    echo "🔧 Mode: DEVELOPMENT (hot-reload enabled)"
+    exec uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+fi

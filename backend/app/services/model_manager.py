@@ -19,6 +19,7 @@ from pathlib import Path
 from typing import Optional, Tuple, Any
 
 from ultralytics import YOLO
+from typing import List, Dict, Any
 
 from app.core.exceptions import AppException
 from app.core.paths import MODELS_DIR
@@ -134,13 +135,6 @@ def swap_model(new_model, meta: dict) -> None:
 
     Called by ``admin_model_service.save_uploaded_model`` after the new
     model has been validated, loaded, and the disk file has been replaced.
-
-    Parameters
-    ----------
-    new_model : ultralytics.YOLO
-        Already-loaded YOLO model (proven loadable).
-    meta : dict
-        Keys: active_model, sha256, size_bytes, loaded_at, ready.
     """
     global _state
     with _reload_lock:
@@ -151,3 +145,26 @@ def swap_model(new_model, meta: dict) -> None:
             "size_bytes": meta.get("size_bytes"),
             "loaded_at": meta.get("loaded_at"),
         })
+
+# ---------------------------------------------------------------------------
+# Helper to expose class names
+# ---------------------------------------------------------------------------
+
+def get_class_names() -> List[Dict[str, Any]]:
+    """Return class ID‑name mapping from the active YOLO model.
+    Handles both dict and list formats of ``model.names``.
+    """
+    try:
+        model, _ = get_model()
+    except Exception:
+        active_path = _active_path()
+        if not active_path.exists():
+            return []
+        model = YOLO(str(active_path))
+
+    names = model.names
+    if isinstance(names, dict):
+        return [{"id": int(k), "name": str(v)} for k, v in names.items()]
+    elif isinstance(names, list):
+        return [{"id": i, "name": str(v)} for i, v in enumerate(names)]
+    return []

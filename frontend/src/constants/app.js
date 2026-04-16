@@ -18,14 +18,14 @@ export const ANIMATION_DELAYS = {
 
 // Toast message constants for consistent user feedback
 export const TOAST_MESSAGES = {
-  EDIT_SUCCESS: '✅ Makanan berhasil dikoreksi',
-  DELETE_SUCCESS: '🗑️ Item berhasil dihapus',
-  MANUAL_ADD_SUCCESS: '➕ Makanan berhasil ditambahkan ke analisis',
-  TRAINING_REQUEST_SUCCESS: '🧪 Request training berhasil dikirim',
-  GENERIC_ERROR: '❌ Terjadi kesalahan. Silakan coba lagi',
-  SELECT_FOOD: '❌ Pilih makanan dari hasil pencarian dulu',
-  EMPTY_DETECTION: '❌ Tidak ada makanan terdeteksi atau response tidak valid',
-  INVALID_SCHEMA: '❌ Invalid response schema: missing items field',
-  TIMEOUT_ERROR: '⏱️ Request timeout. Server tidak merespon dalam 30 detik',
-  NETWORK_ERROR: '🌐 Gagal terhubung ke server',
+  EDIT_SUCCESS: 'Makanan berhasil dikoreksi',
+  DELETE_SUCCESS: 'Item berhasil dihapus',
+  MANUAL_ADD_SUCCESS: 'Makanan berhasil ditambahkan ke analisis',
+  TRAINING_REQUEST_SUCCESS: 'Pengajuan pelatihan berhasil dikirim',
+  GENERIC_ERROR: 'Terjadi kesalahan. Silakan coba lagi',
+  SELECT_FOOD: 'Pilih makanan dari hasil pencarian terlebih dahulu',
+  EMPTY_DETECTION: 'Tidak ada makanan terdeteksi. Coba foto dari sudut lain atau pencahayaan yang lebih baik.',
+  INVALID_SCHEMA: 'Respon server tidak valid. Silakan coba lagi.',
+  TIMEOUT_ERROR: 'Server tidak merespon. Silakan coba beberapa saat lagi.',
+  NETWORK_ERROR: 'Gagal terhubung ke server. Periksa koneksi internet Anda.',
 };

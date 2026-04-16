@@ -1,0 +1,149 @@
+======================================================================
+  RASA-ID v2 -- Comprehensive Flow Test v2
+======================================================================
+
+Test image: C:\kuliah\ProyekAkhir\rasa_id_v2\backend\scripts\test_image_flow.jpg
+
+----------------------------------------------------------------------
+  1. HEALTH & INFO
+----------------------------------------------------------------------
+
+[PASS] [200] GET /health
+   status: ok
+
+[PASS] [200] GET /detectable-foods
+   total: 12
+   foods: [{'yolo_label': 'ayam_goreng_crispy', 'name': 'Ayam daging segar', 'tkpi_code': 'FR005'}, {'yolo_label': 'ayam_goreng', 
+
+----------------------------------------------------------------------
+  2. DETECTION
+----------------------------------------------------------------------
+
+[PASS] [200] POST /detect
+   analysis_id: 197
+   inference_time_ms: 63.24
+   items: []
+   >>> analysis_id=197, no items (test image has no food)
+
+----------------------------------------------------------------------
+  3. TKPI
+----------------------------------------------------------------------
+
+[PASS] [200] GET /tkpi/search?q=nasi
+   [{'id': 102, 'tkpi_code': 'AP001', 'name': 'Nasi', 'energi_kal': 180.0, 'protein_g': 3.0, 'lemak_g': 0.3, 'karbo_g': 39.8, 'serat_g': 0.2}, {'id': 103, 'tkpi_code': 'AP005', 'name': 'Nasi beras merah'
+
+----------------------------------------------------------------------
+  4. FEEDBACK
+----------------------------------------------------------------------
+
+[PASS] [200] POST /feedback (valid)
+   ok: True
+   saved: 1
+   message: Successfully saved 1 feedback items
+
+[PASS] [400] POST /feedback (invalid label -> 400)
+   detail: Label 'makanan_xyz_tidak_ada' tidak dikenali oleh model aktif. Pastikan label sesuai dengan class yang tersedia.
+   code: BAD_REQUEST
+   context: {}
+
+----------------------------------------------------------------------
+  5. CLASS REQUEST
+----------------------------------------------------------------------
+
+[PASS] [200] POST /class-request
+   ok: True
+   id: 4
+   image_path: class_requests/images/66e52e62a7b047bab9363bf9f4f479f3.jpg
+   status: pending
+   created_at: 2026-04-04T07:30:37.252576
+
+----------------------------------------------------------------------
+  6. MISSED DETECTION
+----------------------------------------------------------------------
+
+[PASS] [200] POST /missed-detection
+   ok: True
+   message: Label 'sambal' or TKPI ID 'None' is not a known YOLO class, skipped
+
+----------------------------------------------------------------------
+  7. ADMIN ENDPOINTS
+----------------------------------------------------------------------
+
+[PASS] [200] GET /admin/summary
+   feedback_total: 12
+   feedback_pending: 12
+   class_requests_total: 4
+   class_requests_pending: 4
+   missed_detections_total: 6
+
+[PASS] [200] GET /admin/model/classes
+   loaded: True
+   source: active.pt
+   classes: [{'id': 0, 'name': 'Roti Putih'}, {'id': 1, 'name': 'ayam_goreng'}, {'id': 2, 'name': 'ayam_goreng_crispy'}, {'id': 3, '
+
+[PASS] [200] GET /admin/model/status
+   active_model: active.pt
+   sha256: 08fe8f43326d8d7b7fa6e50b36b5d67cea6b7cb6d7c5ad930c433a7cc34cca7c
+   size_bytes: 18390081
+   loaded_at: 2026-04-04T07:28:56.273967Z
+   ready: True
+
+[PASS] [200] GET /admin/mappings
+   items: [{'id': 22, 'yolo_label': 'ayam_goreng', 'tkpi_food_id': 117, 'tkpi_food_name': 'Ayam daging segar', 'ui_status': 'MENDE
+   total: 12
+
+[PASS] [401] GET /admin/summary (no key -> 401/403)
+   detail: Unauthorized
+   code: UNAUTHORIZED
+   context: {}
+
+----------------------------------------------------------------------
+  8. EXPORT ENDPOINTS
+----------------------------------------------------------------------
+
+[PASS] [200] GET /admin/export/summary
+   feedback: {'new': 3, 'total': 12, 'last_exported_at': '2026-04-03T14:37:40.724453+00:00'}
+   class_request: {'new': 4, 'total': 4, 'last_exported_at': None}
+   missed_detection: {'new': 6, 'total': 6, 'last_exported_at': None}
+
+[PASS] [200] GET /admin/feedback/export
+   [binary: 2998959 bytes, type=application/zip]
+
+[PASS] [200] GET /admin/class-requests/export
+   [binary: 39390 bytes, type=application/zip]
+
+[PASS] [200] GET /admin/export/yolo/feedback
+   [binary: 3698 bytes, type=application/zip]
+
+[PASS] [200] GET /admin/export/yolo/class-requests
+   [binary: 39157 bytes, type=application/zip]
+
+[PASS] [200] GET /admin/export/yolo/missed
+   [binary: 717995 bytes, type=application/zip]
+
+======================================================================
+  TEST SUMMARY
+======================================================================
+  [PASS] [200] GET /health
+  [PASS] [200] GET /detectable-foods
+  [PASS] [200] POST /detect
+  [PASS] [200] GET /tkpi/search?q=nasi
+  [PASS] [200] POST /feedback (valid)
+  [PASS] [400] POST /feedback (invalid label -> 400)
+  [PASS] [200] POST /class-request
+  [PASS] [200] POST /missed-detection
+  [PASS] [200] GET /admin/summary
+  [PASS] [200] GET /admin/model/classes
+  [PASS] [200] GET /admin/model/status
+  [PASS] [200] GET /admin/mappings
+  [PASS] [401] GET /admin/summary (no key -> 401/403)
+  [PASS] [200] GET /admin/export/summary
+  [PASS] [200] GET /admin/feedback/export
+  [PASS] [200] GET /admin/class-requests/export
+  [PASS] [200] GET /admin/export/yolo/feedback
+  [PASS] [200] GET /admin/export/yolo/class-requests
+  [PASS] [200] GET /admin/export/yolo/missed
+
+  Total: 19 | Passed: 19 | Failed: 0
+
+  All 19 tests passed!

@@ -6,7 +6,6 @@ import { calculateTotalNutrition } from '../../utils/nutrition';
  * @param {Array} items - Detection items with baseNutrition, portion, and selected fields
  */
 export default function NutritionTable({ items = [] }) {
-  // ✅ Use utils as single source of truth with useMemo for performance
   const total = useMemo(() => calculateTotalNutrition(items), [items]);
 
   const nutritionRows = [
@@ -43,6 +42,9 @@ export default function NutritionTable({ items = [] }) {
           ))}
         </tbody>
       </table>
+      <div className="mt-3 text-xs text-gray-400 text-right italic">
+        *Sumber Data Referensi: Tabel Komposisi Pangan Indonesia (TKPI) 2020
+      </div>
     </div>
   );
 }

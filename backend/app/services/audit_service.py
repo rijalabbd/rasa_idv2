@@ -1,4 +1,3 @@
-from datetime import datetime
 from typing import Optional, Any
 from sqlalchemy.orm import Session
 from fastapi import Request
@@ -49,7 +48,7 @@ class AuditService:
             action=action,
             meta=meta,
             request_id=request_id or request.headers.get("x-request-id"),
-            created_at=datetime.utcnow()
+            # created_at is handled by server_default=func.now() in the model
         )
         
         self.db.add(audit_entry)

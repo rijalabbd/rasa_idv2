@@ -1,0 +1,10 @@
+{
+  "aliases": {
+    "nasi": "nasi_putih",
+    "ayam": "ayam_goreng",
+    "tahu": "tahu_goreng",
+    "tempe": "tempe_goreng",
+    "telur": "telur_ayam_dadar",
+    "kangkung": "tumis_kangkung"
+  }
+}

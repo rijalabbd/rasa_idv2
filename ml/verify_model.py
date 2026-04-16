@@ -4,7 +4,7 @@ import sys
 # Load the trained model
 model_path = "runs/train_experiment/weights/best.pt"
 try:
-    model = YOLO(model_path)
+    model = YOLO(model_path) 
     print(f"✅ Model loaded successfully: {model_path}")
 except Exception as e:
     print(f"❌ Failed to load model: {e}")

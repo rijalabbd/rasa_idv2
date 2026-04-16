@@ -1,5 +1,6 @@
 import io
 import csv
+import logging
 import zipfile
 from pathlib import Path
 from datetime import datetime
@@ -8,6 +9,8 @@ from sqlalchemy import select
 
 from app.models.class_request import ClassRequest
 from app.core.paths import STORAGE_DIR
+
+logger = logging.getLogger(__name__)
 
 def collect_class_requests(db: Session, only_unexported: bool = True) -> list[ClassRequest]:
     stmt = select(ClassRequest)
@@ -78,11 +81,11 @@ def generate_label_content(req: ClassRequest, label_to_class_id: dict) -> str:
 
 def build_class_request_zip(db: Session, only_unexported: bool = True) -> tuple[io.BytesIO, int, int]:
     requests = collect_class_requests(db, only_unexported)
-    print(f"📦 Exporting {len(requests)} class requests...")
+    logger.info("Exporting %d class requests...", len(requests))
     
     unique_labels = sorted(set(req.requested_label for req in requests))
     label_to_class_id = {label: idx for idx, label in enumerate(unique_labels)}
-    print(f"📋 Class mapping: {label_to_class_id}")
+    logger.info("Class mapping: %s", label_to_class_id)
     
     zip_buffer = io.BytesIO()
     exported_count = 0
@@ -92,12 +95,12 @@ def build_class_request_zip(db: Session, only_unexported: bool = True) -> tuple[
     with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zipf:
         for req in requests:
             if not req.image_path:
-                print(f"⚠️  Skipping request {req.id}: no image_path")
+                logger.warning("Skipping request %d: no image_path", req.id)
                 continue
             
             image_path = STORAGE_DIR / req.image_path
             if not image_path.exists():
-                print(f"⚠️  Skipping request {req.id}: image not found at {image_path}")
+                logger.warning("Skipping request %d: image not found at %s", req.id, image_path)
                 continue
             
             stem = image_path.stem
@@ -107,32 +110,32 @@ def build_class_request_zip(db: Session, only_unexported: bool = True) -> tuple[
             if image_key not in added_images:
                 zipf.write(image_path, f"dataset/images/{image_key}")
                 added_images.add(image_key)
-                print(f"  ✅ Added image: {image_key}")
+                logger.debug("Added image: %s", image_key)
             
             label_key = f"{stem}.txt"
             if label_key not in added_images:
                 label_content = generate_label_content(req, label_to_class_id)
                 zipf.writestr(f"dataset/labels/{label_key}", label_content)
                 added_images.add(label_key)
-                print(f"  ✅ Added label: {label_key}")
+                logger.debug("Added label: %s", label_key)
             
             exported_ids.append(req.id)
             exported_count += 1
         
         yaml_content = generate_data_yaml(unique_labels)
         zipf.writestr("dataset/data.yaml", yaml_content)
-        print(f"✅ Added data.yaml")
+        logger.debug("Added data.yaml")
         
         csv_content = generate_metadata_csv(requests)
         zipf.writestr("dataset/metadata.csv", csv_content)
-        print(f"✅ Added metadata.csv")
+        logger.debug("Added metadata.csv")
     
     unique_images = len([k for k in added_images if not k.endswith('.txt')])
     if exported_count > 0 and only_unexported:
         mark_as_exported(db, exported_ids)
     
     zip_buffer.seek(0)
-    print(f"✅ Export complete: {exported_count} requests, {unique_images} unique images")
+    logger.info("Export complete: %d requests, %d unique images", exported_count, unique_images)
     
     return zip_buffer, exported_count, unique_images
 
@@ -148,4 +151,4 @@ def mark_as_exported(db: Session, request_ids: list[int]):
         req.is_exported = True
     
     db.commit()
-    print(f"✅ Marked {len(request_ids)} class requests as exported")
+    logger.info("Marked %d class requests as exported", len(request_ids))

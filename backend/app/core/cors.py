@@ -11,5 +11,10 @@ def setup_cors(app: FastAPI) -> None:
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
-        expose_headers=["x-request-id"],
+        expose_headers=[
+            "x-request-id",
+            "X-Export-Count",
+            "X-Skip-Count",
+            "X-Export-Batch-ID",
+        ],
     )

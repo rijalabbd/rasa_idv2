@@ -15,9 +15,12 @@ import { DEBOUNCE_DELAYS } from '../constants/app';
 /**
  * Custom hook for TKPI search with debouncing
  * @param {number} limit - Maximum number of search results (default: 10)
+ * @param {Object} [opts] - Optional overrides
+ * @param {boolean|null} [opts.fuzzy=null] - Override fuzzy mode for every search:
+ *   true  → force fuzzy, false → force exact, null → use server flag
  * @returns {Object} Search state and handlers
  */
-export function useTkpiSearch(limit = 10) {
+export function useTkpiSearch(limit = 10, { fuzzy = null } = {}) {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState([]);
   const [isSearching, setIsSearching] = useState(false);
@@ -48,7 +51,7 @@ export function useTkpiSearch(limit = 10) {
     // Increment request ID to invalidate previous pending requests
     const currentReqId = ++reqIdRef.current;
 
-    // ✅ FIX: Clear timeout BEFORE early return to prevent stale requests
+    // Clear timeout before early return to prevent stale requests
     if (timerRef.current) {
       clearTimeout(timerRef.current);
       timerRef.current = null;
@@ -65,7 +68,7 @@ export function useTkpiSearch(limit = 10) {
 
       setIsSearching(true);
       try {
-        const data = await searchTkpi(value, limit);
+        const data = await searchTkpi(value, limit, fuzzy);
         
         // Prevent race condition: only update if this is the latest request and still mounted
         if (aliveRef.current && reqIdRef.current === currentReqId) {
@@ -91,7 +94,7 @@ export function useTkpiSearch(limit = 10) {
   const handleSelect = (tkpi) => {
     setSelected(tkpi);
     setError('');
-    // ✅ FIX: Update query to selected food name and clear results to hide dropdown
+    // Update query to selected food name and clear results to hide dropdown
     setQuery(tkpi.name);
     setResults([]);
   };

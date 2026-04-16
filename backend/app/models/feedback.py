@@ -1,6 +1,6 @@
 from sqlalchemy import Column, Integer, String, Float, ForeignKey, Boolean, DateTime, Text
 from sqlalchemy.orm import relationship
-from datetime import datetime
+from sqlalchemy.sql import func
 from app.db.base import Base
 
 
@@ -30,7 +30,7 @@ class Feedback(Base):
     
     # Processing status
     is_processed = Column(Boolean, nullable=False, default=False, index=True)
-    created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     
     # Relationships
     analysis = relationship("Analysis", back_populates="feedbacks")

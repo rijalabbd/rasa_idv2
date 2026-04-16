@@ -13,8 +13,8 @@ import csv
 import logging
 import zipfile
 from pathlib import Path
-from datetime import datetime
-from typing import List, Tuple
+from datetime import datetime, timezone
+from typing import List, Tuple, Optional
 
 from PIL import Image
 from sqlalchemy.orm import Session
@@ -22,6 +22,7 @@ from sqlalchemy import select
 
 from app.models.feedback import Feedback
 from app.models.analysis import Analysis
+from app.models.yolo_tkpi_mapping import YoloTkpiMapping
 from app.core.paths import FEEDBACK_IMAGES_DIR, FEEDBACK_LABELS_DIR
 
 logger = logging.getLogger(__name__)
@@ -40,37 +41,42 @@ def _find_image(stem: str, directory: Path) -> Path | None:
     matches = list(directory.glob(f"{stem}.*"))
     return matches[0] if matches else None
 
+import json
 
-def _pixel_bbox_to_yolo(bbox: tuple, img_w: int, img_h: int) -> str:
-    """Convert pixel bbox (x1,y1,x2,y2) to YOLO format (x_center, y_center, w, h) normalized."""
-    x1, y1, x2, y2 = bbox
-    x_center = ((x1 + x2) / 2) / img_w
-    y_center = ((y1 + y2) / 2) / img_h
-    w = abs(x2 - x1) / img_w
-    h = abs(y2 - y1) / img_h
-    # Clamp to [0, 1]
-    x_center = max(0.0, min(1.0, x_center))
-    y_center = max(0.0, min(1.0, y_center))
-    w = max(0.0, min(1.0, w))
-    h = max(0.0, min(1.0, h))
-    return f"{x_center:.6f} {y_center:.6f} {w:.6f} {h:.6f}"
-
-
-def _get_image_dimensions(path: Path) -> Tuple[int, int]:
-    """Return (width, height) of an image."""
-    with Image.open(path) as img:
-        return img.size  # (width, height)
+from app.services.feedback_service import (
+    _pixel_bbox_to_yolo,
+    _get_image_dimensions,
+    _calculate_iou,
+    generate_classes_txt,
+    get_yolo_class_id,
+    get_dynamic_class_map,
+)
+from app.services.export_tracking_service import (
+    get_unexported_ids,
+    get_all_ids,
+    mark_exported,
+    generate_batch_id,
+)
 
 
-# ── main export ──────────────────────────────────────────────────────────
-
-def build_yolo_feedback_zip(db: Session) -> Tuple[io.BytesIO, int, int]:
+def build_yolo_feedback_zip(db: Session, only_new: bool = True) -> Tuple[io.BytesIO, int, int, str]:
     """
     Build a YOLO-ready ZIP from feedback data.
-    Returns (zip_buffer, exported_count, skipped_count).
+    Separates into wrong_class/ and false_positive/.
+    Returns (zip_buffer, exported_count, skipped_count, batch_id).
     """
+    batch_id = generate_batch_id()
+    
+    if only_new:
+        target_ids = get_unexported_ids(db, "feedback")
+    else:
+        target_ids = get_all_ids(db, "feedback")
+
+    if not target_ids:
+        return io.BytesIO(), 0, 0, batch_id
+
     feedbacks = db.execute(
-        select(Feedback).order_by(Feedback.created_at)
+        select(Feedback).where(Feedback.id.in_(target_ids)).order_by(Feedback.created_at)
     ).scalars().all()
 
     # Load related analyses
@@ -80,17 +86,11 @@ def build_yolo_feedback_zip(db: Session) -> Tuple[io.BytesIO, int, int]:
     ).scalars().all() if analysis_ids else []
     analyses_map = {a.id: a for a in analyses}
 
-    # Build dynamic class map from dataset
-    unique_labels = sorted(set(f.predicted_label for f in feedbacks if f.predicted_label))
-    label_to_id = {label: idx for idx, label in enumerate(unique_labels)}
-
     zip_buffer = io.BytesIO()
     exported = 0
     skipped = 0
-    metadata_rows: List[dict] = []
+    metadata = {}
 
-    # Aggregate feedbacks by image to avoid writing the same file twice
-    # grouped_by_image: { image_stem: [feedback_items_tuple, ... ] }
     grouped = {}
     for fb in feedbacks:
         if fb.image_filename:
@@ -114,11 +114,15 @@ def build_yolo_feedback_zip(db: Session) -> Tuple[io.BytesIO, int, int]:
         grouped[image_stem]["items"].append(fb)
 
     with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zipf:
+        zipf.writestr("wrong_class/images/", "")
+        zipf.writestr("wrong_class/labels/", "")
+        zipf.writestr("false_positive/images/", "")
+        zipf.writestr("false_positive/labels/", "")
+
         for stem, data in grouped.items():
             image_path = data["image_path"]
             fbs = data["items"]
             
-            # 2. File exists?
             if not image_path.exists():
                 skipped += len(fbs)
                 logger.info(f"Skipped {len(fbs)} feedbacks: image file missing: {image_path.name}")
@@ -134,75 +138,113 @@ def build_yolo_feedback_zip(db: Session) -> Tuple[io.BytesIO, int, int]:
                 skipped += len(fbs)
                 continue
 
-            # Build label content
-            label_lines = []
+            has_wrong_class = False
             img_exported = 0
+            label_lines = []
+            detected_classes_canonical = []
+            
+            # Use the first feedback item for metadata identity
+            primary_fb = fbs[0]
+            
+            # --- 1) INCLUDE ALREADY DETECTED OBJECTS ---
+
+            analysis = analyses_map.get(primary_fb.analysis_id)
+            if analysis and analysis.detections:
+                for det in analysis.detections:
+                    det_box = (det.bbox_x1, det.bbox_y1, det.bbox_x2, det.bbox_y2)
+                    is_overlap = False
+                    for fb in fbs:
+                        if fb.bbox_x1 is not None and fb.bbox_y1 is not None and fb.bbox_x2 is not None and fb.bbox_y2 is not None:
+                            fb_box = (fb.bbox_x1, fb.bbox_y1, fb.bbox_x2, fb.bbox_y2)
+                            if _calculate_iou(det_box, fb_box) > 0.5:
+                                is_overlap = True
+                                break
+                    
+                    if not is_overlap:
+                        class_map = get_dynamic_class_map()
+                        label_lower = det.label.lower().strip()
+                        if label_lower in class_map:
+                            c_id = class_map[label_lower]
+                            y_c = _pixel_bbox_to_yolo((det.bbox_x1, det.bbox_y1, det.bbox_x2, det.bbox_y2), img_w, img_h)
+                            label_lines.append(f"{c_id} {y_c}\n")
+                            detected_classes_canonical.append(label_lower)
+                            img_exported += 1
+                        else:
+                            logger.warning(f"Analysis {analysis.id}: Original detection label '{det.label}' not in current model map. Skipping box.")
+
+            # --- 2) INCLUDE USER FEEDBACK BBOXES ---
             for fb in fbs:
-                # 3. Must have label
-                if not fb.predicted_label:
-                    continue
-                # 4. Must have bbox
                 if fb.bbox_x1 is None or fb.bbox_y1 is None or fb.bbox_x2 is None or fb.bbox_y2 is None:
                     continue
 
-                class_id = label_to_id.get(fb.predicted_label, 0)
-                yolo_coords = _pixel_bbox_to_yolo(
-                    (fb.bbox_x1, fb.bbox_y1, fb.bbox_x2, fb.bbox_y2), img_w, img_h
-                )
-                label_lines.append(f"{class_id} {yolo_coords}\n")
-                img_exported += 1
-                metadata_rows.append({
-                    "id": fb.id, "label": fb.predicted_label,
-                    "image_filename": fb.image_filename or "",
-                    "skipped_reason": "",
-                })
+                coords = (fb.bbox_x1, fb.bbox_y1, fb.bbox_x2, fb.bbox_y2)
+                yolo_coords = _pixel_bbox_to_yolo(coords, img_w, img_h)
+                if fb.corrected_tkpi_food_id:
+                    # Resolve correction to canonical YOLO label
+                    mapping = db.execute(
+                        select(YoloTkpiMapping).where(YoloTkpiMapping.tkpi_food_id == fb.corrected_tkpi_food_id)
+                    ).scalar_one_or_none()
+                    
+                    if mapping:
+                        class_map = get_dynamic_class_map()
+                        mapped_label = mapping.yolo_label.lower().strip()
+                        
+                        if mapped_label in class_map:
+                            class_id = class_map[mapped_label]
+                            label_lines.append(f"{class_id} {yolo_coords}\n")
+                            detected_classes_canonical.append(mapped_label)
+                            has_wrong_class = True
+                            img_exported += 1
+                        else:
+                            logger.warning(f"Feedback {fb.id}: Corrected label '{mapped_label}' not in current model map. Skipping box.")
+                    else:
+                        logger.warning(f"Feedback {fb.id}: No YoloTkpiMapping for TKPI ID {fb.corrected_tkpi_food_id}. Skipping box.")
+                else:
+                    # False Positive - intentional omit from label file
+                    # We still treat the image as "exported" but this specific box is gone
+                    pass
 
+            folder_category = "wrong_class" if has_wrong_class else "false_positive"
+
+            if img_exported == 0 and not label_lines and folder_category == "false_positive":
+                # Special case: Image with ONLY False Positives.
+                # Export as background (empty .txt)
+                img_exported = 1
+            
             if img_exported == 0:
                 skipped += len(fbs)
                 continue
 
             # Add image
             img_key = image_path.name
-            zipf.write(image_path, f"{PREFIX}/images/{img_key}")
+            zipf.write(image_path, f"{folder_category}/images/{img_key}")
 
             # Add label
             label_key = f"{stem}.txt"
-            zipf.writestr(f"{PREFIX}/labels/{label_key}", "".join(label_lines))
+            zipf.writestr(f"{folder_category}/labels/{label_key}", "".join(label_lines))
             
+            # Collection metadata
+            metadata[img_key] = {
+                "feedback_id": primary_fb.id,
+                "analysis_id": primary_fb.analysis_id,
+                "folder": folder_category,
+                "reported_class": primary_fb.predicted_label,
+                "detected_classes": list(set(detected_classes_canonical)),
+                "submitted_at": primary_fb.created_at.isoformat() if primary_fb.created_at else "",
+                "user_note": primary_fb.note or ""
+            }
+
             exported += img_exported
 
-        # data.yaml
-        zipf.writestr(f"{PREFIX}/data.yaml", _build_data_yaml(unique_labels))
-
-        # metadata.csv
-        zipf.writestr(f"{PREFIX}/metadata.csv", _build_metadata_csv(metadata_rows))
+        # Add classes.txt and metadata.json to root
+        zipf.writestr("classes.txt", generate_classes_txt())
+        zipf.writestr("metadata.json", json.dumps(metadata, indent=2))
 
     zip_buffer.seek(0)
-    logger.info(f"YOLO feedback export: {exported} exported, {skipped} skipped")
-    return zip_buffer, exported, skipped
-
-
-# ── generators ───────────────────────────────────────────────────────────
-
-def _build_data_yaml(class_names: list) -> str:
-    lines = [
-        f"# YOLO Feedback Dataset — Generated {datetime.now().isoformat()}",
-        "",
-        "path: .",
-        "train: images",
-        "val: images",
-        "",
-        f"nc: {len(class_names)}",
-        "names:",
-    ]
-    for name in class_names:
-        lines.append(f"  - {name}")
-    return "\n".join(lines) + "\n"
-
-
-def _build_metadata_csv(rows: list) -> str:
-    buf = io.StringIO()
-    writer = csv.DictWriter(buf, fieldnames=["id", "label", "image_filename", "skipped_reason"])
-    writer.writeheader()
-    writer.writerows(rows)
-    return buf.getvalue()
+    
+    # Mark as exported after successful build
+    exported_ids = [fb.id for fb in feedbacks] # All records that were part of this batch
+    mark_exported(db, "feedback", exported_ids, batch_id)
+    
+    logger.info(f"YOLO feedback export: {exported} exported, {skipped} skipped (batch {batch_id})")
+    return zip_buffer, exported, skipped, batch_id

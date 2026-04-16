@@ -6,6 +6,7 @@ POST /api/v1/missed-detection
 """
 
 import logging
+from pathlib import Path
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from typing import Optional
@@ -16,6 +17,7 @@ from app.db.session import get_db
 from app.models.analysis import Analysis
 from app.models.missed_detection import MissedDetection
 from app.models.yolo_tkpi_mapping import YoloTkpiMapping
+from app.storage.files import copy_image_for_missed_detection
 
 logger = logging.getLogger(__name__)
 
@@ -87,19 +89,30 @@ async def report_missed_detection(
             message=f"Already reported '{label_lower}' for analysis {request.analysis_id}"
         )
 
-    # 4) Save
+    # 4) Copy image dan save
+    image_filename = None
+    if analysis.image_path:
+        try:
+            copied_path = copy_image_for_missed_detection(analysis.image_path)
+            image_filename = Path(copied_path).name
+            logger.info(f"Missed detection image copied: {copied_path}")
+        except Exception as e:
+            # Gambar tidak wajib — log warning tapi tetap lanjut
+            logger.warning(f"Could not copy image for missed detection (analysis={request.analysis_id}): {e}")
+
     record = MissedDetection(
         analysis_id=request.analysis_id,
         missed_label=label_lower,
         tkpi_food_id=request.tkpi_food_id,
         note=request.note,
+        image_filename=image_filename,
     )
     db.add(record)
     db.commit()
 
     logger.info(
         f"Missed detection reported: analysis={request.analysis_id}, "
-        f"label={label_lower}"
+        f"label={label_lower}, image={'yes' if image_filename else 'no'}"
     )
 
     return MissedDetectionResponse(

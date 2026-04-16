@@ -6,24 +6,36 @@ from sqlalchemy import select
 from app.models.feedback import Feedback
 from app.models.class_request import ClassRequest
 from app.models.analysis import Analysis
-from typing import IO
+from typing import IO, Tuple
 
 def dump_jsonl(items, fp):
     for item in items:
         fp.write(json.dumps(item) + "\n")
 
-def build_combined_export_zip(db: Session, include_images: bool = False) -> IO[bytes]:
+def build_combined_export_zip(db: Session, include_images: bool = False, only_new: bool = True) -> Tuple[IO[bytes], str]:
     """
     Build a ZIP file containing:
     - feedback.jsonl
     - class_requests.jsonl
     - (Optional) Images folder
     """
+    from app.services.export_tracking_service import get_unexported_ids, get_all_ids, mark_exported, generate_batch_id
+    batch_id = generate_batch_id()
+    
     zip_buffer = io.BytesIO()
     
     with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zipf:
         # 1. Feedback
-        feedbacks = db.execute(select(Feedback).join(Analysis)).scalars().all()
+        if only_new:
+            fb_ids = get_unexported_ids(db, "feedback")
+        else:
+            fb_ids = get_all_ids(db, "feedback")
+            
+        feedbacks = []
+        if fb_ids:
+            feedbacks = db.execute(
+                select(Feedback).join(Analysis).where(Feedback.id.in_(fb_ids))
+            ).scalars().all()
         feedback_list = []
         for f in feedbacks:
             feedback_list.append({
@@ -43,7 +55,16 @@ def build_combined_export_zip(db: Session, include_images: bool = False) -> IO[b
         zipf.writestr("feedback.jsonl", feedback_str.getvalue())
         
         # 2. Class Requests
-        requests = db.execute(select(ClassRequest)).scalars().all()
+        if only_new:
+            cr_ids = get_unexported_ids(db, "class_request")
+        else:
+            cr_ids = get_all_ids(db, "class_request")
+
+        requests = []
+        if cr_ids:
+            requests = db.execute(
+                select(ClassRequest).where(ClassRequest.id.in_(cr_ids))
+            ).scalars().all()
         request_list = []
         for r in requests:
             bbox = None
@@ -70,4 +91,11 @@ def build_combined_export_zip(db: Session, include_images: bool = False) -> IO[b
         # User said "optional: copy images". For minimal MVP jsonl is enough.
         
     zip_buffer.seek(0)
-    return zip_buffer
+    
+    # Mark as exported after successful build
+    if feedbacks:
+        mark_exported(db, "feedback", [f.id for f in feedbacks], batch_id)
+    if requests:
+        mark_exported(db, "class_request", [r.id for r in requests], batch_id)
+    
+    return zip_buffer, batch_id

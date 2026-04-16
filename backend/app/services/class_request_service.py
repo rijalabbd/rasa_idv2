@@ -1,7 +1,7 @@
 from sqlalchemy.orm import Session
 from sqlalchemy import select
 from pathlib import Path
-from pathlib import Path
+import logging
 import datetime
 from fastapi import HTTPException
 
@@ -10,6 +10,8 @@ from app.models.analysis import Analysis
 from app.schemas.class_request import ClassRequestCreate, ClassRequestResponse
 from app.storage.files import copy_image_for_class_request
 
+logger = logging.getLogger(__name__)
+
 def create_class_request(db: Session, request: ClassRequestCreate) -> ClassRequestResponse:
     """Create new class request."""
     try:
@@ -17,16 +19,16 @@ def create_class_request(db: Session, request: ClassRequestCreate) -> ClassReque
         analysis = db.execute(stmt).scalar_one_or_none()
         
         if not analysis:
-            print(f"⚠️ [WARNING] Analysis {request.analysis_id} not found. Saving as ORPHAN request (Phase 1 Resilience).")
+            logger.warning("Analysis %d not found. Saving as ORPHAN request (Phase 1 Resilience).", request.analysis_id)
             # Set to None for orphan request
             request.analysis_id = None 
             image_path = "" # No image available for orphan
         else:
              try:
                 image_path = copy_image_for_class_request(analysis.image_path)
-                print(f"✅ Class request image copied: {image_path}")
+                logger.info("Class request image copied: %s", image_path)
              except Exception as e:
-                print(f"❌ Failed to copy image: {e}")
+                logger.error("Failed to copy image: %s", e)
                 image_path = analysis.image_path
 
         class_request = ClassRequest(
@@ -46,7 +48,7 @@ def create_class_request(db: Session, request: ClassRequestCreate) -> ClassReque
         db.commit()
         db.refresh(class_request)
         
-        print(f"✅ Class request created: ID={class_request.id}, label='{request.requested_label}'")
+        logger.info("Class request created: ID=%d, label='%s'", class_request.id, request.requested_label)
         
         return ClassRequestResponse(
             ok=True,
@@ -56,7 +58,5 @@ def create_class_request(db: Session, request: ClassRequestCreate) -> ClassReque
             created_at=class_request.created_at
         )
     except Exception as e:
-        import traceback
-        traceback.print_exc()
-        print(f"🔥 CRITICAL ERROR in create_class_request: {e}")
+        logger.exception("CRITICAL ERROR in create_class_request: %s", e)
         raise HTTPException(status_code=500, detail=f"Internal Server Error: {str(e)}")
