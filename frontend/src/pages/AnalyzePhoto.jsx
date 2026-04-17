@@ -602,7 +602,7 @@ export default function AnalyzePhoto() {
           <div className="results-layout flex flex-col lg:flex-row gap-6 lg:gap-8 items-start">
             
             {/* === KOLOM KIRI: Foto & Ringkasan (Sticky) === */}
-            <div className="left-col w-full lg:w-[400px] xl:w-[450px] shrink-0 lg:sticky lg:top-28 space-y-6 anim-slide-up" style={{ animationDelay: '0ms' }}">
+            <div className="left-col w-full lg:w-[400px] xl:w-[450px] shrink-0 lg:sticky lg:top-28 space-y-6 anim-slide-up" style={{ animationDelay: '0ms' }}>
 
             {/* Detection Summary Card */}
             <div data-tour="summary-card" className={`border rounded-3xl p-6 text-left shadow-sm relative overflow-hidden transition-colors ${detectionItems.length === 0 ? 'bg-[#FFFBEB] border-amber-200' : 'bg-gradient-to-b from-teal-50 to-white border-teal-100'}`}>
