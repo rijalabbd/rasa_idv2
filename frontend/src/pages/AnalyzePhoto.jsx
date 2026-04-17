@@ -602,7 +602,7 @@ export default function AnalyzePhoto() {
           <div className="results-layout flex flex-col lg:flex-row gap-6 lg:gap-8 items-start">
             
             {/* === KOLOM KIRI: Foto & Ringkasan (Sticky) === */}
-            <div className="left-col w-full lg:w-[400px] xl:w-[450px] shrink-0 lg:sticky lg:top-28 space-y-6 anim-slide-up" style={{ animationDelay: '0ms' }}>
+            <div className="left-col w-full lg:w-[400px] xl:w-[450px] shrink-0 lg:sticky lg:top-28 space-y-6 animate-slide-up-fade opacity-0" style={{ animationDelay: '0ms' }}>
 
             {/* Detection Summary Card */}
             <div data-tour="summary-card" className={`border rounded-3xl p-6 text-left shadow-sm relative overflow-hidden transition-colors ${detectionItems.length === 0 ? 'bg-[#FFFBEB] border-amber-200' : 'bg-gradient-to-b from-teal-50 to-white border-teal-100'}`}>
@@ -657,7 +657,7 @@ export default function AnalyzePhoto() {
 
             {/* Calorie Ranking Card (Matches Gambar 3.8) */}
             {totalNutrition && calorieRanked.length > 0 && (
-              <div data-tour="ranking-card" className="bg-white rounded-[24px] p-6 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] border border-slate-100 anim-slide-up">
+              <div data-tour="ranking-card" className="bg-white rounded-[24px] p-6 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] border border-slate-100 animate-slide-up-fade opacity-0">
                 <div className="ranking-header flex justify-between items-start mb-8">
                   <div className="flex items-center gap-3">
                     <div className="bg-orange-500 rounded-xl p-2.5 shadow-sm shadow-orange-200">
@@ -949,7 +949,7 @@ export default function AnalyzePhoto() {
                 const displaySubtitle = (item.currentName && item.currentName !== originalDetectedName) ? item.currentName : null;
 
                 return (
-                  <div key={index} data-tour={index === 0 ? 'food-card' : undefined} className={`bg-white rounded-[20px] p-4 sm:p-6 shadow-sm border transition-all duration-200 w-full ${isSelected ? 'border-emerald-200 ring-1 ring-emerald-50' : 'border-[#E5E7EB]'} ${isBelumAda ? 'opacity-80' : ''} anim-slide-up`} style={{ animationDelay: `${300 + (index * 100)}ms` }}>
+                  <div key={index} data-tour={index === 0 ? 'food-card' : undefined} className={`bg-white rounded-[20px] p-4 sm:p-6 shadow-sm border transition-all duration-200 w-full ${isSelected ? 'border-emerald-200 ring-1 ring-emerald-50' : 'border-[#E5E7EB]'} ${isBelumAda ? 'opacity-80' : ''} animate-slide-up-fade opacity-0`} style={{ animationDelay: `${300 + (index * 100)}ms` }}>
                     
                     {/* Header row */}
                     <div className="flex justify-between items-start gap-2 mb-2">
