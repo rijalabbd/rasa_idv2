@@ -1162,7 +1162,7 @@ export default function AnalyzePhoto() {
 
                         {/* Action row (Edit / Hapus) */}
                         {!isEditing && (
-                          <div className="flex justify-end gap-2 mt-4 pt-2 relative z-10 pl-[36px]">
+                          <div data-tour={index === 0 ? 'edit-button' : undefined} className="flex justify-end gap-2 mt-4 pt-2 relative z-10 pl-[36px]">
                             <button 
                               onClick={() => handleEditCard(index)} 
                               disabled={isBusyAction}
@@ -1315,7 +1315,7 @@ export default function AnalyzePhoto() {
 
             {/* â”€â”€ Training Request â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
             {showTrainingRequest && (
-              <div className="bg-orange-50 border-2 border-orange-200 rounded-[20px] p-5 shadow-sm mt-4">
+              <div data-tour="request-class" className="bg-orange-50 border-2 border-orange-200 rounded-[20px] p-5 shadow-sm mt-4">
                 <div className="flex justify-between items-center mb-3">
                   <h3 className="font-extrabold text-orange-800 text-sm flex items-center gap-2">
                     <Database size={16} /> Ajukan Kelas Makanan Baru

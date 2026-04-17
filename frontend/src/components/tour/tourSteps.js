@@ -1,6 +1,6 @@
 // frontend/src/components/tour/tourSteps.js
 // ─── Tour Step Configuration ────────────────────────────────────────────────
-// Semua 8 step dikonfigurasi di sini. Edit konten tour tanpa sentuh komponen.
+// Semua 10 step dikonfigurasi di sini. Edit konten tour tanpa sentuh komponen.
 //
 // Fields:
 //   type          : 'fullscreen' | 'spotlight'
@@ -81,23 +81,40 @@ const TOUR_STEPS = [
     fallbackDesc: 'Cek dan atur porsi di tiap kartu makanan.',
   },
 
-  // ─── STEP 6: Koreksi, Tambah & Request ────────────────────────────────────
+  // ─── STEP 6: Koreksi / Edit ───────────────────────────────────────────────
+  {
+    type: 'spotlight',
+    target: 'edit-button',
+    title: '✏️ Koreksi Makanan',
+    description: 'AI salah menebak? Klik "Edit" lalu ketik nama makanan yang benar. Koreksimu membantu AI belajar!',
+    waitForAction: null,
+    fallbackTitle: 'Koreksi Makanan',
+    fallbackDesc: 'Gunakan tombol Edit di kartu makanan untuk mengganti nama yang salah.',
+  },
+
+  // ─── STEP 7: Tambah / Missed Detection ────────────────────────────────────
   {
     type: 'spotlight',
     target: 'add-food-area',
-    title: '✏️ Koreksi & Tambah',
-    description: 'AI tidak sempurna! Bantu kami belajar dari koreksimu:',
+    title: '➕ Tambah Makanan',
+    description: 'Ada makanan di piringmu yang tidak terdeteksi? Cari secara manual dengan mengetik namanya di sini.',
     waitForAction: null,
-    features: [
-      { icon: '✏️', label: 'Edit — AI salah tebak? Ganti ke nama yang benar' },
-      { icon: '➕', label: 'Tambah — makanan tidak terdeteksi? Cari manual dengan nama' },
-      { icon: '📝', label: 'Ajukan — belum ada di sistem? Minta kami tambahkan' },
-    ],
-    fallbackTitle: 'Koreksi & Kontribusi',
-    fallbackDesc: 'Edit atau tambah makanan agar AI makin pintar.',
+    fallbackTitle: 'Tambah Manual',
+    fallbackDesc: 'Makanan tidak terdeteksi? Cari manual dengan nama.',
   },
 
-  // ─── STEP 7: Selesai! ─────────────────────────────────────────────────────
+  // ─── STEP 8: Ajukan Kelas Baru / Request Class ────────────────────────────
+  {
+    type: 'spotlight',
+    target: 'request-class',
+    title: '📝 Ajukan Makanan Baru',
+    description: 'Makanan khasmu belum dikenal sama sekali? Ajukan namanya agar bisa kami latih untuk dikenali di masa depan.',
+    waitForAction: null,
+    fallbackTitle: 'Request Kelas Baru',
+    fallbackDesc: 'Ajukan makanan baru agar dilatih oleh AI kami.',
+  },
+
+  // ─── STEP 9: Selesai! ─────────────────────────────────────────────────────
   {
     type: 'fullscreen',
     icon: '🎉',

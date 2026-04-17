@@ -7,7 +7,7 @@
 import { createContext, useContext, useState, useCallback, useMemo } from 'react';
 
 const STORAGE_KEY = 'rasa_tour_done';
-const TOTAL_STEPS = 8; // 0..7
+const TOTAL_STEPS = 10; // 0..9
 
 // ─── Context ────────────────────────────────────────────────────────────────
 const TourContext = createContext(null);
