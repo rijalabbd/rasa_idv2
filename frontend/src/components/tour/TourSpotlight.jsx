@@ -20,9 +20,10 @@ export default function TourSpotlight() {
   } = useTour();
 
   const [targetRect, setTargetRect] = useState(null);
-  const [tooltipPos, setTooltipPos] = useState({ top: 0, left: 0 });
+  const [tooltipPos, setTooltipPos] = useState({ top: -999, left: -999, arrowPos: 'hidden' });
   const [animClass, setAnimClass] = useState('');
   const [overlayState, setOverlayState] = useState('entering');
+  const tooltipRef = useRef(null);
   const observerRef = useRef(null);
   const animFrameRef = useRef(null);
 
@@ -46,6 +47,9 @@ export default function TourSpotlight() {
     }
 
     const rect = el.getBoundingClientRect();
+    const vpW = window.innerWidth;
+    const vpH = window.innerHeight;
+
     setTargetRect({
       top: rect.top - PADDING,
       left: rect.left - PADDING,
@@ -53,34 +57,52 @@ export default function TourSpotlight() {
       height: rect.height + PADDING * 2,
     });
 
-    // Calculate tooltip position dynamically to prevent overlap
-    const pos = step?.position || 'bottom';
-    const vpW = window.innerWidth;
-    const vpH = window.innerHeight;
-    const tooltipH = tooltipRef.current ? tooltipRef.current.offsetHeight : 220;
-    const tooltipW = tooltipRef.current ? tooltipRef.current.offsetWidth : 350;
+    const isMobile = vpW <= 640;
+    const tooltipElem = tooltipRef.current;
+    
+    const tooltipH = tooltipElem ? tooltipElem.offsetHeight : 220;
+    const tooltipW = tooltipElem ? tooltipElem.offsetWidth : Math.min(vpW - 32, 380);
 
-    let top, left;
+    let top, left, arrowPos;
 
-    // Center horizontally relative to target
-    left = Math.max(16, Math.min(rect.left + (rect.width / 2) - (tooltipW / 2), vpW - tooltipW - 16));
-
-    if (pos === 'bottom') {
-      top = rect.bottom + TOOLTIP_GAP;
-      // If tooltip would go off-screen bottom, flip to top
-      if (top + tooltipH > vpH - 16) {
-        top = rect.top - TOOLTIP_GAP - tooltipH;
+    if (isMobile) {
+      // Mobile bottom-sheet style
+      left = 16;
+      top = vpH - tooltipH - 24; // slight padding from bottom edge
+      
+      // If the spotlight is at the very bottom, shift the tooltip up so it doesn't overlap the spotlight!
+      if (rect.bottom > top - TOOLTIP_GAP) {
+        top = rect.top - tooltipH - TOOLTIP_GAP;
+        // If it also overflows top, just fallback
+        if (top < 16) top = 16;
       }
-    } else { // 'top'
-      top = rect.top - TOOLTIP_GAP - tooltipH;
-      // If tooltip would go off-screen top, flip to bottom
-      if (top < 16) {
+      arrowPos = 'hidden'; 
+    } else {
+      // Smart Positioning (Desktop/Tablet)
+      const spaceAbove = rect.top - 16;
+      const spaceBelow = vpH - rect.bottom - 16;
+      
+      // Horizontal centering relative to target, clamped to bounds
+      left = rect.left + (rect.width / 2) - (tooltipW / 2);
+      left = Math.max(16, Math.min(left, vpW - tooltipW - 16));
+
+      // Decide if we should place Above or Below based on available space
+      if (spaceBelow >= tooltipH + TOOLTIP_GAP || spaceBelow >= spaceAbove) {
+        // Place below targeted element
         top = rect.bottom + TOOLTIP_GAP;
+        arrowPos = 'top'; // Arrow points UP towards the element
+      } else {
+        // Place above targeted element
+        top = rect.top - TOOLTIP_GAP - tooltipH;
+        arrowPos = 'bottom'; // Arrow points DOWN towards the element
       }
+      
+      // Clamp vertically to viewport
+      top = Math.max(16, Math.min(top, vpH - tooltipH - 16));
     }
 
-    setTooltipPos({ top: Math.max(16, top), left });
-  }, [findTarget, step?.position]);
+    setTooltipPos({ top, left, arrowPos });
+  }, [findTarget]);
 
   // ── Auto-scroll + Retry finding target ─────────────────────────────────────
   useEffect(() => {
@@ -93,7 +115,12 @@ export default function TourSpotlight() {
     const tryFind = () => {
       const el = findTarget();
       if (el) {
-        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        
+        const rect = el.getBoundingClientRect();
+        const vpH = window.innerHeight;
+        // If element is smaller than 50% height, center it safely. Otherwise just top.
+        const blockPos = rect.height < (vpH / 2) ? 'center' : 'start';
+        el.scrollIntoView({ behavior: 'smooth', block: blockPos });
         // Wait for scroll to finish, then update position
         setTimeout(updatePosition, 400);
       } else if (attempts < maxAttempts) {
@@ -158,16 +185,11 @@ export default function TourSpotlight() {
     };
   }, [isTourActive, isSpotlightStep, currentStep, updatePosition]);
 
-  // ── Animation class on step change ─────────────────────────────────────────
+  // ── Handle Overlay State ─────────────────────────────────────────────
   useEffect(() => {
     if (!isTourActive || !isSpotlightStep) return;
-    setAnimClass('');
-    requestAnimationFrame(() => {
-      const pos = step?.position || 'bottom';
-      setAnimClass(targetRect ? `animate-in-${pos}` : 'animate-in-center');
-    });
     setOverlayState('entering');
-  }, [currentStep, isTourActive, isSpotlightStep, targetRect]);
+  }, [currentStep, isTourActive, isSpotlightStep]);
 
   // ── Auto-advance polling & Manual Next checking ────────────────────────────
   const checkActionFulfilled = useCallback(() => {
@@ -291,7 +313,8 @@ export default function TourSpotlight() {
 
       {/* ── Tooltip card ───────────────────────────────────── */}
       <div
-        className={`tour-tooltip ${animClass}`}
+        ref={tooltipRef}
+        className={`tour-tooltip`}
         style={
           isFallback
             ? {
@@ -307,10 +330,10 @@ export default function TourSpotlight() {
         onClick={(e) => e.stopPropagation()}
       >
         {/* Arrow (only when not fallback) */}
-        {!isFallback && step?.position === 'bottom' && (
+        {!isFallback && tooltipPos.arrowPos === 'top' && (
           <div className="tour-tooltip-arrow arrow-top" />
         )}
-        {!isFallback && step?.position === 'top' && (
+        {!isFallback && tooltipPos.arrowPos === 'bottom' && (
           <div className="tour-tooltip-arrow arrow-bottom" />
         )}
 
