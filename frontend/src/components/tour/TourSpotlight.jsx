@@ -79,26 +79,49 @@ export default function TourSpotlight() {
       arrowPos = 'hidden'; 
     } else {
       // Smart Positioning (Desktop/Tablet)
+      // ── Calculate available space in all 4 directions ──
       const spaceAbove = rect.top - 16;
       const spaceBelow = vpH - rect.bottom - 16;
-      
-      // Horizontal centering relative to target, clamped to bounds
-      left = rect.left + (rect.width / 2) - (tooltipW / 2);
-      left = Math.max(16, Math.min(left, vpW - tooltipW - 16));
+      const spaceRight = vpW - rect.right - 16;
+      const spaceLeft  = rect.left - 16;
 
-      // Decide if we should place Above or Below based on available space
-      if (spaceBelow >= tooltipH + TOOLTIP_GAP || spaceBelow >= spaceAbove) {
-        // Place below targeted element
+      // ── Try side placement first for tall elements ──
+      const isTargetTall = rect.height > vpH * 0.35;
+
+      if (isTargetTall && spaceRight >= tooltipW + TOOLTIP_GAP) {
+        // Place to the RIGHT of the target
+        left = rect.right + TOOLTIP_GAP;
+        top = rect.top + Math.min(40, (rect.height - tooltipH) / 2);
+        top = Math.max(16, Math.min(top, vpH - tooltipH - 16));
+        arrowPos = 'hidden';
+      } else if (isTargetTall && spaceLeft >= tooltipW + TOOLTIP_GAP) {
+        // Place to the LEFT of the target
+        left = rect.left - tooltipW - TOOLTIP_GAP;
+        top = rect.top + Math.min(40, (rect.height - tooltipH) / 2);
+        top = Math.max(16, Math.min(top, vpH - tooltipH - 16));
+        arrowPos = 'hidden';
+      } else if (spaceBelow >= tooltipH + TOOLTIP_GAP) {
+        // Place below — enough room without overlapping
+        left = rect.left + (rect.width / 2) - (tooltipW / 2);
+        left = Math.max(16, Math.min(left, vpW - tooltipW - 16));
         top = rect.bottom + TOOLTIP_GAP;
-        arrowPos = 'top'; // Arrow points UP towards the element
-      } else {
-        // Place above targeted element
+        arrowPos = 'top';
+      } else if (spaceAbove >= tooltipH + TOOLTIP_GAP) {
+        // Place above
+        left = rect.left + (rect.width / 2) - (tooltipW / 2);
+        left = Math.max(16, Math.min(left, vpW - tooltipW - 16));
         top = rect.top - TOOLTIP_GAP - tooltipH;
-        arrowPos = 'bottom'; // Arrow points DOWN towards the element
+        arrowPos = 'bottom';
+      } else {
+        // Fallback: fixed bottom-right corner (guaranteed no overlap)
+        left = vpW - tooltipW - 24;
+        top = vpH - tooltipH - 24;
+        arrowPos = 'hidden';
       }
-      
-      // Clamp vertically to viewport
+
+      // Final viewport clamp
       top = Math.max(16, Math.min(top, vpH - tooltipH - 16));
+      left = Math.max(16, Math.min(left, vpW - tooltipW - 16));
     }
 
     setTooltipPos({ top, left, arrowPos });
