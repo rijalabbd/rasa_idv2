@@ -19,7 +19,7 @@ import { useTkpiSearch } from '../hooks/useTkpiSearch';
 import { multiplyNutrition, calculateTotalNutrition, getNutritionBadge } from '../utils/nutrition';
 import { useTour } from '../hooks/useTour';
 
-// ─── Reusable styled sub-components ─────────────────────────────────────────
+// â”€â”€â”€ Reusable styled sub-components â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function NutriTile({ icon: Icon, label, value, unit, colorVariant }) {
   const variants = {
@@ -60,7 +60,7 @@ function PortionBtn({ label, active, onClick, disabled }) {
   );
 }
 
-// ─── Main component ───────────────────────────────────────────────────────────
+// â”€â”€â”€ Main component â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export default function AnalyzePhoto() {
   const navigate = useNavigate();
 
@@ -105,7 +105,7 @@ export default function AnalyzePhoto() {
 
   const isBusyAction = loading || isSubmitting || isAdding || isRequesting || deletingIndex !== null;
 
-  // ── Tour integration ──────────────────────────────────────────────────────
+  // â”€â”€ Tour integration â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const { isTourActive, currentStep, nextStep } = useTour();
 
   // Auto-advance: if tour is on step 1 (upload) but photo already exists (replay)
@@ -114,7 +114,7 @@ export default function AnalyzePhoto() {
   // Auto-advance: if tour is on step 2 (detect) but results already exist
   const tourDetectFulfilled = isTourActive && currentStep === 2 && analysisId !== null;
 
-  // "Pakai Foto Contoh" for tour — loads a sample image
+  // "Pakai Foto Contoh" for tour â€” loads a sample image
   const handleUseSampleImage = async () => {
     try {
       const response = await fetch('/sample_food.jpg');
@@ -135,7 +135,7 @@ export default function AnalyzePhoto() {
   const uploadRef = useRef(null);
   const cameraRef = useRef(null);
 
-  // ── Helpers ─────────────────────────────────────────────────────────────────
+  // â”€â”€ Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const resetInlineStates = () => {
     editSearch.reset(); addSearch.reset();
     setEditingCardIndex(null); setEditError('');
@@ -153,7 +153,7 @@ export default function AnalyzePhoto() {
   useEffect(() => () => { if (toastTimerRef.current) clearTimeout(toastTimerRef.current); }, []);
   useEffect(() => () => { if (previewUrl) URL.revokeObjectURL(previewUrl); }, [previewUrl]);
 
-  // ── Handlers ─────────────────────────────────────────────────────────────────
+  // â”€â”€ Handlers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const handleImageUpload = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -238,6 +238,9 @@ export default function AnalyzePhoto() {
   const handleEditCard = (index) => {
     if (isBusyAction) return;
     setEditingCardIndex(index); setAddingFoodIndex(null); setShowTrainingRequest(false); setEditError(''); editSearch.reset();
+    setTimeout(() => {
+      document.getElementById(`edit-panel-${index}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 100);
   };
   const handleCancelEdit = () => { setEditingCardIndex(null); setEditError(''); editSearch.reset(); };
 
@@ -259,7 +262,13 @@ export default function AnalyzePhoto() {
     } finally { setIsSubmitting(false); }
   };
 
-  const handleOpenAddFood = () => { if (isBusyAction) return; setAddingFoodIndex('standalone'); setEditingCardIndex(null); addSearch.reset(); setAddError(''); };
+  const handleOpenAddFood = () => { 
+    if (isBusyAction) return; 
+    setAddingFoodIndex('standalone'); setEditingCardIndex(null); addSearch.reset(); setAddError(''); 
+    setTimeout(() => {
+      document.getElementById('add-food-panel')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 100);
+  };
   const handleCancelAddFood = () => { setAddingFoodIndex(null); addSearch.reset(); setAddError(''); };
 
   const handleConfirmAddFood = async () => {
@@ -280,7 +289,7 @@ export default function AnalyzePhoto() {
   const handleOpenTrainingRequest = () => { setShowTrainingRequest(true); setRequestMsg(''); setRequestNote(''); setRequestedLabelInput(''); };
   const handleCancelTrainingRequest = () => { setShowTrainingRequest(false); setRequestMsg(''); setRequestNote(''); setRequestedLabelInput(''); };
 
-  // ── Smart Search: unified zero-detection form ────────────────────
+  // -- Smart Search: unified zero-detection form ----------------------
   const handleOpenSmartSearch = async () => {
     setShowSmartSearch(true);
     smartSearch.reset();
@@ -324,40 +333,31 @@ export default function AnalyzePhoto() {
     }
   };
 
-  const handleSmartClassRequest = async () => {
-    const label = smartSearch.query.trim();
-    if (!analysisId) { showToast('error', 'Silakan deteksi foto terlebih dahulu.'); return; }
-    if (!label) { showToast('error', 'Masukkan nama makanan.'); return; }
-    setIsRequesting(true); setRequestMsg('');
-    try {
-      await submitClassRequest({ analysis_id: analysisId, requested_label: label, bbox: null, note: requestNote || '' });
-      if (analysisId) reportMissedDetection({ analysis_id: analysisId, missed_label: label, note: 'Makanan belum ada di database — class request' }).catch(() => {});
-      const msg = `Laporan berhasil dikirim! Makanan "${label}" akan kami pertimbangkan.`;
-      setRequestMsg(msg); showToast('success', msg);
-    } catch (err) {
-      const msg = err?.code === 'TIMEOUT' ? 'Proses terlalu lama.' : err?.message || TOAST_MESSAGES.GENERIC_ERROR;
-      setRequestMsg(msg); showToast('error', msg);
-    } finally { setIsRequesting(false); }
-  };
-
-  const handleSubmitTrainingRequest = async () => {
+  // -- Unified class request handler ----------------------------------
+  // Bug fix 1: handleSubmitTrainingRequest was missing reportMissedDetection
+  // Bug fix 2: handleSmartClassRequest was missing SERVER_BUSY error handling
+  const handleSubmitClassRequest = async (label, note = '') => {
+    const trimmedLabel = label?.trim();
     if (!analysisId) { const m = 'Silakan deteksi foto terlebih dahulu.'; setRequestMsg(m); showToast('error', m); return; }
-    if (!requestedLabelInput.trim()) { const m = 'Masukkan nama makanan yang ingin diajukan.'; setRequestMsg(m); showToast('error', m); return; }
+    if (!trimmedLabel) { const m = 'Masukkan nama makanan yang ingin diajukan.'; setRequestMsg(m); showToast('error', m); return; }
     setIsRequesting(true); setRequestMsg('');
     try {
-      await submitClassRequest({ analysis_id: analysisId, requested_label: requestedLabelInput.trim(), bbox: null, note: requestNote || '' });
-      const msg = `${TOAST_MESSAGES.TRAINING_REQUEST_SUCCESS} (${requestedLabelInput})`;
+      await submitClassRequest({ analysis_id: analysisId, requested_label: trimmedLabel, bbox: null, note: note || '' });
+      reportMissedDetection({ analysis_id: analysisId, missed_label: trimmedLabel, note: 'Makanan belum ada di database - class request' }).catch(() => {});
+      const msg = `Laporan berhasil dikirim! Makanan "${trimmedLabel}" akan kami pertimbangkan.`;
       setRequestMsg(msg); showToast('success', msg);
       setRequestedLabelInput(''); setRequestNote('');
     } catch (err) {
-      const msg = err?.code === 'TIMEOUT' ? 'Proses terlalu lama.' : err?.code === 'SERVER_BUSY' ? 'Server sedang sibuk.' : err?.message || TOAST_MESSAGES.GENERIC_ERROR;
+      const msg = err?.code === 'TIMEOUT' ? 'Proses terlalu lama.'
+        : err?.code === 'SERVER_BUSY' ? 'Server sedang sibuk.'
+        : err?.message || TOAST_MESSAGES.GENERIC_ERROR;
       setRequestMsg(msg); showToast('error', msg);
     } finally { setIsRequesting(false); }
   };
 
-  const shouldShowResults = analysisId !== null || detectionItems.length > 0;
+    const shouldShowResults = analysisId !== null || detectionItems.length > 0;
 
-  // ── Derived State ──────────────────────────────────────────────
+  // â”€â”€ Derived State â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const calorieRanked = useMemo(() => {
     const selected = detectionItems.filter(it => it.selected && it.baseNutrition);
     const withCal = selected.map(it => ({ name: it.currentName, kal: Math.round((it.baseNutrition.energi_kal || 0) * (it.portion || 1)) }));
@@ -387,20 +387,20 @@ export default function AnalyzePhoto() {
     return bgs[index % bgs.length];
   };
 
-  // ── RENDER ─────────────────────────────────────────────────────────────────
+  // â”€â”€ RENDER â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   return (
     <div className="font-sans min-h-screen bg-[#f0fdf8] text-slate-800 pb-16">
       
       {/* Toast Notification */}
       {toast && (
-        <div className={`fixed top-4 right-4 z-[9999] max-w-sm p-4 rounded-xl shadow-lg border text-sm font-semibold flex items-start gap-3
+        <div className={`toast-wrap fixed top-4 right-4 z-[9999] max-w-sm p-4 rounded-xl shadow-lg border text-sm font-semibold flex items-start gap-3
           ${toast.type === 'success' ? 'bg-emerald-50 border-emerald-200 text-emerald-800' : 'bg-red-50 border-red-200 text-red-800'}`}>
           {toast.type === 'success' ? <CheckCircle2 size={18} className="text-emerald-500 mt-0.5" /> : <AlertCircle size={18} className="text-red-500 mt-0.5" />}
           <div>{toast.text}</div>
         </div>
       )}
 
-      {/* ── Header ─────────────────────────────────────────────────────────── */}
+      {/* â”€â”€ Header â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
       {!shouldShowResults ? (
         <div className="bg-transparent px-6 py-6 flex items-center">
           <button 
@@ -408,26 +408,28 @@ export default function AnalyzePhoto() {
             disabled={isBusyAction} 
             className="flex items-center gap-2 text-slate-500 hover:text-[#10b981] font-semibold text-sm group transition-all"
           >
-            ← <span className="group-hover:underline">Kembali</span>
+            <Home size={16} /> <span className="group-hover:underline">Kembali</span>
           </button>
         </div>
       ) : (
-        <div className="bg-white/80 backdrop-blur-md px-6 py-5 shadow-sm sticky top-0 z-30 flex flex-col items-start gap-1">
+        <div className="bg-white/90 border-b border-slate-100 px-5 py-4 shadow-sm flex items-center justify-between">
+          <div className="flex flex-col">
+            <h1 className="text-base font-bold text-slate-900 leading-tight">Hasil Deteksi</h1>
+            <p className="text-[11px] text-slate-400 font-medium">Analisis gizi makanan Anda</p>
+          </div>
           <button 
             onClick={() => { setDetectionItems([]); setAnalysisId(null); setPreviewUrl(null); setSelectedFile(null); setError(null); resetInlineStates(); }}
             disabled={isBusyAction} 
-            className="flex items-center gap-2 text-slate-500 hover:text-[#10b981] font-semibold text-sm group transition-all mb-2"
+            className="flex items-center gap-1.5 text-slate-500 hover:text-[#10b981] font-semibold text-xs bg-slate-50 hover:bg-emerald-50 border border-slate-200 hover:border-emerald-300 px-3 py-2 rounded-xl transition-all"
           >
-             ← <span className="group-hover:underline">Kembali</span>
+            <Camera size={14} /> Foto Baru
           </button>
-          <h1 className="text-xl font-bold text-slate-900">Hasil Deteksi</h1>
-          <p className="text-xs text-slate-500">Analisis gizi makanan Anda</p>
         </div>
       )}
 
       <div className={`mx-auto p-4 sm:p-6 lg:p-8 transition-all ${shouldShowResults ? 'max-w-7xl' : 'max-w-3xl'}`}>
 
-        {/* ── CSS untuk Animasi Form ── */}
+        {/* â”€â”€ CSS untuk Animasi Form â”€â”€ */}
         <style>{`
           @keyframes cameraBounce { 
             0%, 100% { transform: translateY(0); } 
@@ -449,11 +451,55 @@ export default function AnalyzePhoto() {
             background-image: linear-gradient(90deg, #10b981 0%, #34d399 20%, #10b981 40%, #10b981 100%);
             animation: shimmer 2.5s linear infinite;
           }
+
+          /* â”€â”€ Mobile Responsive: AnalyzePhoto â”€â”€ */
+          @media (max-width: 640px) {
+            /* Results two-column â†’ single column */
+            .results-layout { flex-direction: column !important; }
+            
+            /* Left sticky col: remove sticky on mobile */
+            .left-col { 
+              width: 100% !important; 
+              position: static !important; 
+              top: auto !important;
+            }
+
+            /* Ranking card header: wrap on small screens */
+            .ranking-header { flex-wrap: wrap; gap: 8px !important; }
+            .ranking-total { text-align: left !important; }
+            .ranking-total .text-3xl { font-size: 1.5rem !important; }
+
+            /* Nutrition tiles: compact text */
+            .nutri-value { font-size: 0.9rem !important; }
+
+            /* Detection card: reduce padding */
+            .detection-card { padding: 16px !important; border-radius: 16px !important; }
+
+            /* Portion buttons: make them smaller */
+            .portion-btn-group { gap: 4px !important; flex-wrap: wrap !important; }
+
+            /* Summary card: smaller font */
+            .summary-count { font-size: 2rem !important; }
+
+            /* Upload card: tighter padding on small phones */
+            .upload-card { padding: 20px 16px !important; }
+            .upload-card h1 { font-size: 1.35rem !important; }
+
+            /* Toast: full width on mobile */
+            .toast-wrap { right: 12px !important; left: 12px !important; max-width: 100% !important; }
+          }
+
+          @media (max-width: 400px) {
+            .left-col { width: 100% !important; }
+            .detection-card { padding: 12px !important; }
+            .summary-count { font-size: 1.75rem !important; }
+          }
         `}</style>
 
-        {/* ── Upload Section Redesigned ── */}
+
+        {/* â”€â”€ Upload Section Redesigned â”€â”€ */}
         {!shouldShowResults && (
-          <div className="bg-white rounded-[24px] shadow-[0_4px_24px_rgba(0,0,0,0.06)] p-6 md:p-10 text-center relative overflow-hidden max-w-[560px] mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500">
+          <div className="upload-card bg-white rounded-[24px] shadow-[0_4px_24px_rgba(0,0,0,0.06)] p-6 md:p-10 text-center relative overflow-hidden max-w-[560px] mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500">
             <h1 className="text-2xl md:text-3xl font-extrabold text-[#0f172a] mb-2 tracking-tight">Upload Foto Makanan</h1>
             <p className="text-slate-500 text-sm md:text-base font-medium mb-8">AI kami akan menganalisis kandungan gizi secara otomatis</p>
 
@@ -490,7 +536,7 @@ export default function AnalyzePhoto() {
                   </div>
                   <h3 className="text-slate-700 font-bold text-base mb-1">Ambil atau pilih dari galeri</h3>
                   <p className="text-slate-400 text-xs font-medium mb-3">Drag & drop foto ke sini</p>
-                  <p className="text-slate-400 text-[10px] uppercase tracking-widest font-bold">Format: JPG, PNG — Maks. 10MB</p>
+                  <p className="text-slate-400 text-[10px] uppercase tracking-widest font-bold">Format: JPG, PNG â€” Maks. 10MB</p>
                 </>
               )}
             </div>
@@ -515,7 +561,7 @@ export default function AnalyzePhoto() {
               </div>
             )}
 
-            {/* "Pakai Foto Contoh" — only visible during tour */}
+            {/* "Pakai Foto Contoh" â€” only visible during tour */}
             {isTourActive && !selectedFile && (
               <button
                 onClick={handleUseSampleImage}
@@ -549,12 +595,12 @@ export default function AnalyzePhoto() {
           </div>
         )}
 
-        {/* ── Results Section ───────────────────────────────────────────────── */}
+        {/* â”€â”€ Results Section â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
         {shouldShowResults && (
-          <div className="flex flex-col lg:flex-row gap-6 lg:gap-8 items-start">
+          <div className="results-layout flex flex-col lg:flex-row gap-6 lg:gap-8 items-start">
             
             {/* === KOLOM KIRI: Foto & Ringkasan (Sticky) === */}
-            <div className="w-full lg:w-[400px] xl:w-[450px] shrink-0 lg:sticky lg:top-28 space-y-6">
+            <div className="left-col w-full lg:w-[400px] xl:w-[450px] shrink-0 lg:sticky lg:top-28 space-y-6">
 
             {/* Detection Summary Card */}
             <div data-tour="summary-card" className={`border rounded-3xl p-6 text-left shadow-sm relative overflow-hidden transition-colors ${detectionItems.length === 0 ? 'bg-[#FFFBEB] border-amber-200' : 'bg-gradient-to-b from-teal-50 to-white border-teal-100'}`}>
@@ -576,7 +622,7 @@ export default function AnalyzePhoto() {
                 Model YOLOv8-Indonesian
               </div>
               
-              <div className={`text-4xl font-extrabold mb-1 tracking-tight ${detectionItems.length === 0 ? 'text-[#0f172a]' : 'text-[#10b981]'}`}>
+              <div className={`summary-count text-4xl font-extrabold mb-1 tracking-tight ${detectionItems.length === 0 ? 'text-[#0f172a]' : 'text-[#10b981]'}`}>
                 <span className={detectionItems.length === 0 ? 'text-[#F59E0B]' : ''}>{detectionItems.length}</span> Makanan
               </div>
               <div className="text-sm font-medium text-slate-500 mb-5">Berhasil Terdeteksi</div>
@@ -610,7 +656,7 @@ export default function AnalyzePhoto() {
             {/* Calorie Ranking Card (Matches Gambar 3.8) */}
             {totalNutrition && calorieRanked.length > 0 && (
               <div data-tour="ranking-card" className="bg-white rounded-[24px] p-6 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] border border-slate-100">
-                <div className="flex justify-between items-start mb-8">
+                <div className="ranking-header flex justify-between items-start mb-8">
                   <div className="flex items-center gap-3">
                     <div className="bg-orange-500 rounded-xl p-2.5 shadow-sm shadow-orange-200">
                       <BarChart2 size={24} className="text-white" />
@@ -620,7 +666,7 @@ export default function AnalyzePhoto() {
                       <div className="text-xs font-medium text-slate-400">Urutan tertinggi ke terendah</div>
                     </div>
                   </div>
-                  <div className="text-right">
+                  <div className="ranking-total text-right">
                     <div className="text-3xl font-black text-orange-500 leading-tight">{totalNutrition.energi_kal.toFixed(0)}</div>
                     <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Total kalori</div>
                   </div>
@@ -669,7 +715,7 @@ export default function AnalyzePhoto() {
               </div>
             )}
 
-            {/* 🔴 ZERO DETECTION — UNIFIED SMART SEARCH 🔴 */}
+            {/* ðŸ”´ ZERO DETECTION â€” UNIFIED SMART SEARCH ðŸ”´ */}
             {detectionItems.length === 0 && (
               <div className="space-y-6">
                 
@@ -830,7 +876,7 @@ export default function AnalyzePhoto() {
                             )}
 
                             <button 
-                              onClick={handleSmartClassRequest}
+                              onClick={() => handleSubmitClassRequest(smartSearch.query, requestNote)}
                               disabled={isRequesting || isBusyAction}
                               className="w-full py-3 rounded-xl bg-orange-500 hover:bg-orange-600 text-white font-bold text-sm shadow-sm transition-colors disabled:opacity-50 flex justify-center items-center gap-2"
                             >
@@ -864,7 +910,7 @@ export default function AnalyzePhoto() {
               </div>
             )}
 
-            {/* ── Pilih semua / Kosongkan (Matches Gambar 3.9 top) ────────── */}
+            {/* â”€â”€ Pilih semua / Kosongkan (Matches Gambar 3.9 top) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
             {detectionItems.length > 0 && (
               <div className="flex gap-3 px-1">
                 <button 
@@ -884,7 +930,7 @@ export default function AnalyzePhoto() {
               </div>
             )}
 
-            {/* ── Food Detail Cards (Matches Gambar 3.9) ───────────────────── */}
+            {/* â”€â”€ Food Detail Cards (Matches Gambar 3.9) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
             <div className="space-y-4">
               {detectionItems.map((item, index) => {
                 const displayNutrition = multiplyNutrition(item.baseNutrition, item.portion || 1);
@@ -899,25 +945,25 @@ export default function AnalyzePhoto() {
                 const displaySubtitle = (item.currentName && item.currentName !== originalDetectedName) ? item.currentName : null;
 
                 return (
-                  <div key={index} data-tour={index === 0 ? 'food-card' : undefined} className={`bg-white rounded-[20px] p-6 shadow-sm border transition-all duration-200 min-w-[520px] lg:w-full ${isSelected ? 'border-emerald-200 ring-1 ring-emerald-50' : 'border-[#E5E7EB]'} ${isBelumAda ? 'opacity-80' : ''}`}>
+                  <div key={index} data-tour={index === 0 ? 'food-card' : undefined} className={`bg-white rounded-[20px] p-4 sm:p-6 shadow-sm border transition-all duration-200 w-full ${isSelected ? 'border-emerald-200 ring-1 ring-emerald-50' : 'border-[#E5E7EB]'} ${isBelumAda ? 'opacity-80' : ''}`}>
                     
                     {/* Header row */}
-                    <div className="flex justify-between items-center mb-2">
-                       <div className="flex gap-3 items-center">
+                    <div className="flex justify-between items-start gap-2 mb-2">
+                       <div className="flex gap-2 sm:gap-3 items-center min-w-0">
                           <div 
                             className={`shrink-0 cursor-pointer transition-transform hover:scale-105 active:scale-95 ${isBelumAda ? 'opacity-50 cursor-not-allowed' : ''}`}
                             onClick={() => !isBelumAda && !isBusyAction && handleToggleSelected(index)}
                           >
                              {isSelected ? <CheckCircle2 size={24} className="text-[#10b981]" fill="#ecfdf5" /> : <div className="w-[24px] h-[24px] rounded-full border-2 border-slate-300" />}
                           </div>
-                          <span className="font-bold text-slate-800 text-[20px] capitalize leading-snug tracking-tight">{displayTitle}</span>
+                          <span className="font-bold text-slate-800 text-[17px] sm:text-[20px] capitalize leading-snug tracking-tight">{displayTitle}</span>
                        </div>
                        
                        {/* Calories Pill */}
                        {!isBelumAda && (
-                         <div className="bg-[#FFF7ED] px-[12px] py-[6px] rounded-full flex items-center gap-1.5 shrink-0">
-                            <Flame size={16} className="text-orange-500 mt-0.5" />
-                            <span className="font-semibold text-orange-600 text-[14px] tracking-tight">{displayNutrition.energi_kal.toFixed(0)} <span className="text-[11px] font-extrabold uppercase opacity-90 ml-0.5">KAL</span></span>
+                         <div className="bg-[#FFF7ED] px-[10px] py-[5px] rounded-full flex items-center gap-1 shrink-0">
+                            <Flame size={14} className="text-orange-500 mt-0.5" />
+                            <span className="font-semibold text-orange-600 text-[13px] tracking-tight">{displayNutrition.energi_kal.toFixed(0)} <span className="text-[10px] font-extrabold uppercase opacity-90 ml-0.5">KAL</span></span>
                          </div>
                        )}
                     </div>
@@ -939,7 +985,7 @@ export default function AnalyzePhoto() {
                        )}
                        
                        {item.corrected && (
-                         <span className="text-emerald-500 text-[11px] font-bold uppercase tracking-wider before:content-['•'] before:mr-1 before:text-emerald-300">
+                         <span className="text-emerald-500 text-[11px] font-bold uppercase tracking-wider before:content-['â€¢'] before:mr-1 before:text-emerald-300">
                            Dikoreksi
                          </span>
                        )}
@@ -972,16 +1018,16 @@ export default function AnalyzePhoto() {
                               <Utensils size={13} className="text-gray-400" />
                               <span className="text-[11px] uppercase tracking-wider font-bold text-gray-400">PORSI</span>
                            </div>
-                           <div className="flex flex-wrap items-center gap-3">
-                             <div className="flex gap-2">
+                           <div className="flex flex-col gap-2.5">
+                             <div className="flex flex-wrap gap-2">
                                {[0.5, 1, 1.5, 2].map(p => (
                                  <button 
                                    key={p}
                                    onClick={() => handlePortionChange(index, p)} 
                                    disabled={isBusyAction}
-                                   className={`h-[36px] px-4 rounded-full text-[13px] font-semibold transition-all border outline-none focus:ring-2 focus:ring-emerald-200 ${item.portion === p ? 'bg-[#10b981] text-white border-[#10b981] shadow-sm shadow-emerald-200/50' : 'bg-white text-gray-600 border-[#E5E7EB] hover:bg-gray-50'}`}
+                                   className={`h-[34px] px-3 rounded-full text-[12px] font-semibold transition-all border outline-none focus:ring-2 focus:ring-emerald-200 ${item.portion === p ? 'bg-[#10b981] text-white border-[#10b981] shadow-sm shadow-emerald-200/50' : 'bg-white text-gray-600 border-[#E5E7EB] hover:bg-gray-50'}`}
                                  >
-                                   {p === 0.5 ? '½ Porsi' : p === 1 ? '1 Porsi' : p === 1.5 ? '1½ Porsi' : '2 Porsi'}
+                                   {p === 0.5 ? '1/2 Porsi' : p === 1 ? '1 Porsi' : p === 1.5 ? '1 1/2 Porsi' : '2 Porsi'}
                                  </button>
                                ))}
                              </div>
@@ -1001,9 +1047,9 @@ export default function AnalyzePhoto() {
                         </div>
                         
                         {/* Nutrition Grid */}
-                        <div className="grid grid-cols-3 gap-2.5 mb-3">
+                        <div className="grid grid-cols-3 gap-2 mb-3">
                            {/* Protein */}
-                           <div className="bg-[#EFF6FF] rounded-[12px] p-4 flex flex-col items-center text-center px-2">
+                           <div className="bg-[#EFF6FF] rounded-[12px] p-2 sm:p-4 flex flex-col items-center text-center">
                               <div className="mb-0.5">
                                 <span className="font-bold text-[22px] text-slate-800 tracking-tight">{displayNutrition.protein_g.toFixed(1)}</span>
                                 <span className="text-[12px] font-semibold text-slate-500 ml-1 uppercase">g</span>
@@ -1011,7 +1057,7 @@ export default function AnalyzePhoto() {
                               <div className="text-[13px] font-medium text-slate-500">Protein</div>
                            </div>
                            {/* Lemak */}
-                           <div className="bg-[#FFFBEB] rounded-[12px] p-4 flex flex-col items-center text-center px-2">
+                           <div className="bg-[#FFFBEB] rounded-[12px] p-2 sm:p-4 flex flex-col items-center text-center">
                               <div className="mb-0.5">
                                 <span className="font-bold text-[22px] text-slate-800 tracking-tight">{displayNutrition.lemak_g.toFixed(1)}</span>
                                 <span className="text-[12px] font-semibold text-slate-500 ml-1 uppercase">g</span>
@@ -1019,7 +1065,7 @@ export default function AnalyzePhoto() {
                               <div className="text-[13px] font-medium text-slate-500">Lemak</div>
                            </div>
                            {/* Karbo */}
-                           <div className="bg-[#F0FDF4] rounded-[12px] p-4 flex flex-col items-center text-center px-2">
+                           <div className="bg-[#F0FDF4] rounded-[12px] p-2 sm:p-4 flex flex-col items-center text-center">
                               <div className="mb-0.5">
                                 <span className="font-bold text-[22px] text-slate-800 tracking-tight">{displayNutrition.karbo_g.toFixed(1)}</span>
                                 <span className="text-[12px] font-semibold text-slate-500 ml-1 uppercase">g</span>
@@ -1038,7 +1084,7 @@ export default function AnalyzePhoto() {
 
                     {/* Edit panel (Matches Gambar 4.1 Form Koreksi) */}
                         {isEditing && (
-                          <div className="bg-blue-50/50 rounded-2xl p-4 mb-4 border border-blue-100 shadow-inner">
+                          <div id={`edit-panel-${index}`} className="bg-blue-50/50 rounded-2xl p-4 mb-4 border border-blue-100 shadow-inner">
                             <div className="flex justify-between items-center mb-4">
                               <div className="text-sm font-bold text-slate-800 flex items-center gap-2">
                                 <Edit size={16} className="text-blue-500" /> Koreksi Makanan
@@ -1056,6 +1102,7 @@ export default function AnalyzePhoto() {
                                 type="text" placeholder="Ketik nama makanan yang benar..." 
                                 value={editSearch.query} 
                                 onChange={e => editSearch.handleSearch(e.target.value)}
+                                onFocus={(e) => { setTimeout(() => e.target.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300); }}
                                 className="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-300 rounded-xl text-sm font-medium focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none transition-all shadow-sm" 
                                 autoFocus
                               />
@@ -1071,7 +1118,7 @@ export default function AnalyzePhoto() {
                                       className="w-full text-left px-4 py-2.5 hover:bg-blue-50 focus:bg-blue-50 border-b border-slate-50 last:border-0 transition-colors"
                                     >
                                       <div className="text-sm font-bold text-slate-700">{r.name}</div>
-                                      <div className="text-xs text-slate-400">{r.nutrition?.energi_kal} kalori • {r.nutrition?.protein_g}g protein</div>
+                                      <div className="text-xs text-slate-400">{r.nutrition?.energi_kal} kalori â€¢ {r.nutrition?.protein_g}g protein</div>
                                     </button>
                                   ))}
                                 </div>
@@ -1133,7 +1180,28 @@ export default function AnalyzePhoto() {
               })}
             </div>
 
-            {/* ── Tambah Makanan Manual ────────────────────────────────────── */}
+            {/* â”€â”€ Tambah Makanan Manual â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+            
+            {/* â”€â”€ Tombol Ulangi Deteksi â”€â”€ */}
+            {detectionItems.length > 0 && addingFoodIndex === null && (
+              <div className="mt-6 flex flex-col sm:flex-row items-center gap-3">
+                <button
+                  onClick={() => { setDetectionItems([]); setAnalysisId(null); setPreviewUrl(null); setSelectedFile(null); setError(null); resetInlineStates(); uploadRef.current?.click(); }}
+                  disabled={isBusyAction}
+                  className="w-full sm:w-auto flex-1 flex items-center justify-center gap-2 bg-white border-2 border-[#10b981] text-[#10b981] hover:bg-emerald-50 active:scale-95 font-bold py-3.5 rounded-2xl text-sm transition-all shadow-sm"
+                >
+                  <Camera size={18} /> Foto Makanan Baru
+                </button>
+                <button
+                  onClick={() => navigate(ROUTES.HOME)}
+                  disabled={isBusyAction}
+                  className="w-full sm:w-auto flex-1 flex items-center justify-center gap-2 bg-[#0f172a] hover:bg-slate-800 active:scale-95 text-white font-bold py-3.5 rounded-2xl text-sm transition-all shadow-sm"
+                >
+                  <Home size={18} /> Kembali ke Beranda
+                </button>
+              </div>
+            )}
+
             {addingFoodIndex === null && detectionItems.length > 0 && (
               <div data-tour="add-food-area" className="bg-white border-2 border-slate-100 rounded-[20px] p-5 flex items-center justify-between shadow-sm mt-6">
                 <div className="flex items-center gap-4">
@@ -1156,7 +1224,7 @@ export default function AnalyzePhoto() {
             )}
 
             {addingFoodIndex === 'standalone' && detectionItems.length > 0 && (
-              <div className="bg-white border-2 border-emerald-400 rounded-[20px] p-5 shadow-emerald-100/50 shadow-lg mt-6 relative overflow-hidden">
+              <div id="add-food-panel" className="bg-white border-2 border-emerald-400 rounded-[20px] p-5 shadow-emerald-100/50 shadow-lg mt-6 relative overflow-hidden">
                 <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-emerald-400 to-teal-400" />
                 <div className="flex justify-between items-center mb-4 mt-1">
                   <h3 className="font-extrabold text-slate-800 text-sm flex items-center gap-2">
@@ -1172,6 +1240,7 @@ export default function AnalyzePhoto() {
                     type="text" 
                     value={addSearch.query} 
                     onChange={e => addSearch.handleSearch(e.target.value)} 
+                    onFocus={(e) => { setTimeout(() => e.target.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300); }}
                     placeholder="Contoh: Nasi Goreng Spesial..."
                     className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 outline-none transition-all shadow-inner" 
                     autoFocus 
@@ -1240,7 +1309,7 @@ export default function AnalyzePhoto() {
               </div>
             )}
 
-            {/* ── Training Request ─────────────────────────────────────────── */}
+            {/* â”€â”€ Training Request â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
             {showTrainingRequest && (
               <div className="bg-orange-50 border-2 border-orange-200 rounded-[20px] p-5 shadow-sm mt-4">
                 <div className="flex justify-between items-center mb-3">
@@ -1260,6 +1329,7 @@ export default function AnalyzePhoto() {
                   type="text" 
                   value={requestedLabelInput} 
                   onChange={e => setRequestedLabelInput(e.target.value)} 
+                  onFocus={(e) => { setTimeout(() => e.target.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300); }}
                   placeholder="Nama makanan (contoh: Gudeg, Papeda)..."
                   className="w-full px-4 py-2.5 bg-white border border-orange-200 rounded-xl text-sm font-medium focus:border-orange-500 focus:ring-2 focus:ring-orange-100 outline-none transition-all mb-3" 
                 />
@@ -1279,7 +1349,7 @@ export default function AnalyzePhoto() {
                 
                 <div className="flex gap-3 mt-4">
                   <button 
-                    onClick={handleSubmitTrainingRequest} 
+                    onClick={() => handleSubmitClassRequest(requestedLabelInput, requestNote)} 
                     disabled={isRequesting || isBusyAction}
                     className="flex-1 py-3 rounded-xl bg-orange-500 hover:bg-orange-600 text-white font-bold text-sm shadow-sm transition-colors disabled:opacity-50 flex justify-center items-center gap-2"
                   >

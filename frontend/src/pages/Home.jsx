@@ -105,6 +105,7 @@ export default function Home() {
         .cta-btn {
           animation: ctaPulse 2.5s infinite cubic-bezier(0.4, 0, 0.2, 1);
           transition: all 0.3s ease;
+          width: auto;
         }
         .cta-btn:hover { transform: translateY(-3px) scale(1.02); }
         .cta-btn:active { transform: translateY(0) scale(1); }
@@ -116,11 +117,37 @@ export default function Home() {
           position: relative;
           z-index: 10;
         }
+
+        /* ── Mobile Responsive Overrides ── */
+        @media (max-width: 640px) {
+          .hero-section { padding-top: 100px !important; padding-bottom: 48px !important; }
+          .hero-badge { font-size: 11px !important; padding: 6px 14px !important; }
+          .hero-desc { margin-bottom: 32px !important; }
+          .cta-btn { width: 100% !important; justify-content: center; padding: 16px 24px !important; font-size: 15px !important; }
+          .floating-btn { bottom: 16px !important; right: 16px !important; padding: 10px 16px !important; font-size: 13px !important; }
+          .section-pad { padding: 48px 16px !important; }
+          .section-pad-bottom { padding-top: 48px !important; padding-bottom: 80px !important; }
+          .steps-grid { grid-template-columns: 1fr !important; gap: 16px !important; margin-top: 32px !important; }
+          .step-card { padding: 32px 24px !important; }
+          .tips-toggle { max-width: 100% !important; }
+          .tips-grid { grid-template-columns: 1fr !important; gap: 16px !important; }
+          .alt-grid { grid-template-columns: 1fr !important; gap: 16px !important; }
+          .alt-card { padding: 28px 20px !important; }
+          .food-tags { padding: 24px 16px !important; gap: 10px !important; }
+          .food-tag { padding: 8px 14px !important; font-size: 13px !important; }
+          .bottom-cta-title { font-size: 26px !important; }
+          .bottom-cta-desc { font-size: 15px !important; margin-bottom: 32px !important; }
+        }
+
+        @media (max-width: 400px) {
+          .hero-section { padding-top: 80px !important; }
+          .cta-btn { font-size: 14px !important; padding: 14px 20px !important; }
+        }
       `}</style>
 
       {/* ── Floating Panduan Button ── */}
       {!isTourActive && (
-        <button onClick={handleReplayTour} className="btn-hover" aria-label="Lihat Panduan" style={{
+        <button onClick={handleReplayTour} className="btn-hover floating-btn" aria-label="Lihat Panduan" style={{
           position:'fixed', bottom:32, right:32, zIndex:100,
           background:'#10B981', color:'#fff', border:'none', borderRadius:50,
           padding:'14px 24px', fontSize:14, fontWeight:600, cursor:'pointer',
@@ -134,10 +161,10 @@ export default function Home() {
       {/* ═══════════════════════════════════════════════════════════
           HERO SECTION (Base: #f0fdf8)
       ═══════════════════════════════════════════════════════════ */}
-      <section className="section-box" style={{ paddingTop: '160px', paddingBottom: '80px', textAlign:'center', background: 'transparent' }}>
+      <section className="section-box hero-section" style={{ paddingTop: '160px', paddingBottom: '80px', textAlign:'center', background: 'transparent' }}>
         <Reveal>
           <div style={{ maxWidth:800, margin:'0 auto', padding: '0 24px' }}>
-            <div style={{
+            <div className="hero-badge" style={{
               display:'inline-flex', alignItems:'center', gap:6,
               background:'rgba(209, 250, 229, 0.8)', color:'#047857', fontSize:13, fontWeight:700,
               padding:'8px 20px', borderRadius:50, marginBottom:32,
@@ -155,7 +182,7 @@ export default function Home() {
               <span style={{ color: '#10B981' }}>Hanya dari Foto</span>
             </h1>
 
-            <p style={{
+            <p className="hero-desc" style={{
               fontSize:'clamp(16px, 2vw, 19px)', color:'#475569', margin:'0 auto 48px',
               maxWidth:560, lineHeight:1.7,
             }}>
@@ -182,7 +209,7 @@ export default function Home() {
       {/* ═══════════════════════════════════════════════════════════
           CARA PENGGUNAAN (Base: #ffffff)
       ═══════════════════════════════════════════════════════════ */}
-      <section className="section-box" style={{ background: '#ffffff', padding: '80px 24px' }}>
+      <section className="section-box section-pad" style={{ background: '#ffffff', padding: '80px 24px' }}>
         <div style={{ maxWidth:1000, margin:'0 auto', textAlign:'center' }}>
           <Reveal>
             <SectionHeader
@@ -192,14 +219,14 @@ export default function Home() {
             />
           </Reveal>
 
-          <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(280px, 1fr))', gap:32, marginTop:56 }}>
+          <div className="steps-grid" style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(280px, 1fr))', gap:32, marginTop:56 }}>
             {[
               { step:'01', icon: Camera,   title:'Ambil Foto',    desc:'Unggah foto makananmu dengan jelas dan pencahayaan yang cukup.',         color:'#10B981', bg:'#ECFDF5' },
               { step:'02', icon: Sparkles, title:'Analisis AI',   desc:'Sistem pintar kami akan mengenali jenis makanan di piringmu.',            color:'#8B5CF6', bg:'#F5F3FF' },
               { step:'03', icon: BarChart3, title:'Hasil Nutrisi', desc:'Lihat takaran kalori, protein, lemak, dan karbohidrat secara instan.', color:'#F59E0B', bg:'#FFFBEB' },
             ].map((item, idx) => (
               <Reveal key={idx} delay={idx * 150}>
-                <div className="hover-card" style={{
+                <div className="hover-card step-card" style={{
                   borderRadius:28, padding:'48px 36px', background: '#FAFAFA',
                   border:'1px solid #F1F5F9', position:'relative', textAlign:'left',
                 }}>
@@ -224,7 +251,7 @@ export default function Home() {
       {/* ═══════════════════════════════════════════════════════════
           TIPS PENGAMBILAN GAMBAR (Base: #f0fdf8)
       ═══════════════════════════════════════════════════════════ */}
-      <section className="section-box" style={{ background: '#f0fdf8', padding: '80px 24px' }}>
+      <section className="section-box section-pad" style={{ background: '#f0fdf8', padding: '80px 24px' }}>
         <div style={{ maxWidth:840, margin:'0 auto' }}>
           <Reveal>
             <div style={{ textAlign:'center', marginBottom:48 }}>
@@ -238,7 +265,7 @@ export default function Home() {
 
           <Reveal delay={100}>
             {/* Toggle Tabs */}
-            <div style={{ 
+            <div className="tips-toggle" style={{ 
               display:'flex', background:'#E2E8F0', borderRadius:16, padding:6, 
               maxWidth:440, margin:'0 auto 48px'
             }}>
@@ -261,7 +288,7 @@ export default function Home() {
 
           {/* DO */}
           {tipsTab === 'do' && (
-            <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(320px, 1fr))', gap:24 }}>
+            <div className="tips-grid" style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(280px, 1fr))', gap:24 }}>
               {TIPS_DO.map((item, i) => (
                 <Reveal key={i} delay={i * 100}>
                   <div className="hover-card" style={{
@@ -300,22 +327,7 @@ export default function Home() {
             </div>
           )}
 
-          {/* Note Banner */}
-          <Reveal delay={300}>
-            <div style={{
-              marginTop:48, background:'#FFFBEB', borderRadius:20, padding:28,
-              border:'1px solid #FDE68A', ...flex({ gap:20, alignItems:'flex-start' }),
-            }}>
-              <div style={{ color:'#D97706', paddingTop:2 }}><Info size={28} /></div>
-              <div>
-                <h4 style={{ margin:'0 0 8px', fontSize:17, fontWeight:700, color:'#92400E' }}>Catatan Penting</h4>
-                <p style={{ margin:0, fontSize:15, color:'#B45309', lineHeight:1.6 }}>
-                  Jika makanan dibungkus plastik atau daun, sebaiknya buka terlebih dahulu agar terlihat jelas.
-                  Makanan dengan tampilan yang tertutup akan lebih sulit dikenali oleh sistem.
-                </p>
-              </div>
-            </div>
-          </Reveal>
+
         </div>
       </section>
 
@@ -325,7 +337,7 @@ export default function Home() {
       {/* ═══════════════════════════════════════════════════════════
           ALTERNATIF & BANTUAN (Base: #ffffff)
       ═══════════════════════════════════════════════════════════ */}
-      <section className="section-box" style={{ background: '#ffffff', padding: '80px 24px' }}>
+      <section className="section-box section-pad" style={{ background: '#ffffff', padding: '80px 24px' }}>
         <div style={{ maxWidth:900, margin:'0 auto' }}>
           <Reveal>
             <div style={{ textAlign:'center', marginBottom:56 }}>
@@ -337,14 +349,14 @@ export default function Home() {
             </div>
           </Reveal>
 
-          <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(260px, 1fr))', gap:28 }}>
+          <div className="alt-grid" style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(260px, 1fr))', gap:28 }}>
             {[
               { icon: Edit,       title:'Koreksi Data',     desc:'Ubah hasil deteksi secara manual ke nama makanan yang tepat.',        color:'#3B82F6', bg: '#EFF6FF' },
               { icon: PlusCircle, title:'Pencarian Manual',  desc:'Cari makanan langsung dari dalam pangkalan data TKPI.',              color:'#10B981', bg: '#ECFDF5' },
               { icon: FileText,   title:'Ajukan Makanan',    desc:'Kirimkan foto makanan baru untuk dipelajari oleh model AI.',         color:'#F59E0B', bg: '#FFFBEB' },
             ].map((item, idx) => (
               <Reveal key={idx} delay={idx * 150}>
-                <div className="hover-card" style={{
+                <div className="hover-card alt-card" style={{
                   border:'1px solid #E2E8F0', borderRadius:24, background: '#FAFAFA',
                   padding:'40px 28px', textAlign:'center',
                 }}>
@@ -366,7 +378,7 @@ export default function Home() {
       {/* ═══════════════════════════════════════════════════════════
           DATABASE MAKANAN (Base: #f0fdf8)
       ═══════════════════════════════════════════════════════════ */}
-      <section className="section-box" style={{ background: '#f0fdf8', padding: '80px 24px' }}>
+      <section className="section-box section-pad" style={{ background: '#f0fdf8', padding: '80px 24px' }}>
         <div style={{ maxWidth:1000, margin:'0 auto' }}>
           <Reveal>
             <div style={{ textAlign:'center', marginBottom:56 }}>
@@ -406,13 +418,13 @@ export default function Home() {
                 </button>
               </div>
             ) : (
-              <div style={{ 
+              <div className="food-tags" style={{ 
                 display:'flex', flexWrap:'wrap', gap:14, justifyContent:'center',
                 background: '#ffffff', padding: '40px', borderRadius: 32,
                 border: '1px solid #E2E8F0'
               }}>
                 {detectableFoods.map((food, idx) => (
-                  <div key={food.yolo_label} style={{
+                  <div key={food.yolo_label} className="food-tag" style={{
                     background:'#FAFAFA', border:'1px solid #E2E8F0', borderRadius:50,
                     padding:'10px 20px', ...flex({ alignItems:'center', gap:10 }),
                     fontSize:14, fontWeight:600, color:'#334155',
@@ -447,11 +459,11 @@ export default function Home() {
       {/* ═══════════════════════════════════════════════════════════
           BOTTOM CTA (Base: #ffffff)
       ═══════════════════════════════════════════════════════════ */}
-      <section className="section-box" style={{ background: '#ffffff', textAlign:'center', paddingTop: '80px', paddingBottom: '160px' }}>
+      <section className="section-box section-pad-bottom" style={{ background: '#ffffff', textAlign:'center', paddingTop: '80px', paddingBottom: '160px' }}>
         <Reveal>
           <div style={{ maxWidth:600, margin:'0 auto' }}>
-            <h2 style={{ fontSize:36, fontWeight:800, color:'#0f172a', marginBottom:20 }}>Siap Memulai?</h2>
-            <p style={{ fontSize:17, color:'#475569', marginBottom:48, lineHeight:1.7 }}>
+            <h2 className="bottom-cta-title" style={{ fontSize:36, fontWeight:800, color:'#0f172a', marginBottom:20 }}>Siap Memulai?</h2>
+            <p className="bottom-cta-desc" style={{ fontSize:17, color:'#475569', marginBottom:48, lineHeight:1.7 }}>
               Cobalah sekarang dan rasakan kemudahan mengecek nilai gizi harian Anda melalui kamera gawai.
             </p>
             <button onClick={() => navigate(ROUTES.ANALYZE)} className="cta-btn" style={{
