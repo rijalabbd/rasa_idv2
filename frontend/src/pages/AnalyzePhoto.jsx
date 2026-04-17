@@ -23,26 +23,24 @@ import { useTour } from '../hooks/useTour';
 
 function NutriTile({ icon: Icon, label, value, unit, colorVariant }) {
   const variants = {
-    blue: "bg-blue-50 text-blue-600",
-    yellow: "bg-yellow-50 text-yellow-600",
-    green: "bg-green-50 text-green-600",
+    blue: "bg-gradient-to-br from-blue-50/80 to-blue-100/50 text-blue-700 border border-blue-100 shadow-[0_2px_10px_-4px_rgba(59,130,246,0.1)]",
+    yellow: "bg-gradient-to-br from-amber-50/80 to-amber-100/50 text-amber-700 border border-amber-100 shadow-[0_2px_10px_-4px_rgba(245,158,11,0.1)]",
+    green: "bg-gradient-to-br from-emerald-50/80 to-emerald-100/50 text-emerald-700 border border-emerald-100 shadow-[0_2px_10px_-4px_rgba(16,185,129,0.1)]",
+    purple: "bg-gradient-to-br from-purple-50/80 to-purple-100/50 text-purple-700 border border-purple-100 shadow-[0_2px_10px_-4px_rgba(168,85,247,0.1)]",
   };
-  const iconColors = {
-    blue: "#3b82f6",
-    yellow: "#eab308",
-    green: "#22c55e",
-  };
+  const iconColors = { blue: "#3b82f6", yellow: "#eab308", green: "#10b981", purple: "#a855f7" };
   
   return (
-    <div className={`${variants[colorVariant]} rounded-xl py-3 px-2 text-center flex-1 flex flex-col items-center justify-center`}>
-      {Icon && <Icon size={16} color={iconColors[colorVariant]} className="mb-1 opacity-70" />}
-      <div className="text-base font-bold text-slate-800">
-        {value}<span className="text-xs font-semibold ml-0.5">{unit}</span>
+    <div className={`${variants[colorVariant]} rounded-[14px] py-3.5 px-2 text-center flex-1 flex flex-col items-center justify-center transition-transform hover:-translate-y-0.5 duration-300`}>
+      {Icon && <Icon size={16} color={iconColors[colorVariant]} className="mb-1.5 opacity-70" />}
+      <div className="text-lg leading-none font-black text-slate-800 mb-1">
+        {value}<span className="text-xs font-bold text-slate-500 ml-0.5">{unit}</span>
       </div>
-      <div className="text-xs font-medium text-slate-500 mt-0.5">{label}</div>
+      <div className="text-[11px] font-bold uppercase tracking-wider opacity-80">{label}</div>
     </div>
   );
 }
+
 
 function PortionBtn({ label, active, onClick, disabled }) {
   return (
@@ -679,20 +677,22 @@ export default function AnalyzePhoto() {
                     const pct = Math.round((item.kal / maxKal) * 100);
                     const rankBgColor = getRankColors(i);
                     return (
-                      <div key={i} className="flex items-center gap-4">
-                        <div className={`w-7 h-7 shrink-0 rounded-full ${rankBgColor} text-white text-sm font-bold flex items-center justify-center shadow-sm`}>
+                      <div key={i} className="group flex items-center gap-4 p-2.5 -mx-2.5 hover:bg-slate-50/80 rounded-2xl transition-all duration-300 cursor-default">
+                        <div className={`w-8 h-8 shrink-0 rounded-full ${rankBgColor} text-white text-xs font-extrabold flex items-center justify-center shadow-md ring-4 ring-white group-hover:scale-110 transition-transform duration-300`}>
                           {i + 1}
                         </div>
                         <div className="flex-1">
-                          <div className="flex justify-between items-end mb-1.5">
-                            <span className="text-sm font-bold text-slate-700">{item.name}</span>
-                            <span className="text-xs font-semibold text-slate-400">
-                              <span className="text-orange-500">{item.kal}</span> kalori
-                              <span className="ml-2 font-black">{pct}%</span>
+                          <div className="flex justify-between items-end mb-2">
+                            <span className="text-sm font-bold text-slate-700 group-hover:text-slate-900 transition-colors">{item.name}</span>
+                            <span className="text-xs font-semibold flex items-center gap-1.5">
+                              <span className="text-orange-600 bg-orange-50 px-2 py-0.5 rounded-md border border-orange-100">{item.kal} <span className="text-[10px] font-medium text-orange-400">kal</span></span>
+                              <span className="text-slate-400 font-bold bg-slate-100 px-1.5 py-0.5 rounded-md">{pct}%</span>
                             </span>
                           </div>
-                          <div className="bg-slate-100 rounded-full h-2.5 overflow-hidden">
-                            <div className={`h-full rounded-full ${rankBgColor} transition-all duration-700 ease-out`} style={{ width: `${pct}%` }} />
+                          <div className="bg-slate-100/80 rounded-full h-2.5 overflow-hidden ring-1 ring-inset ring-slate-200/50">
+                            <div className={`h-full rounded-full ${rankBgColor} transition-all duration-1000 ease-out relative overflow-hidden`} style={{ width: `${pct}%` }}>
+                              <div className="absolute inset-0 bg-white/20 w-full animate-[shimmer_2s_infinite]" style={{backgroundImage: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent)', transform: 'skewX(-20deg)'}} />
+                            </div>
                           </div>
                         </div>
                       </div>
@@ -701,10 +701,11 @@ export default function AnalyzePhoto() {
                 </div>
 
                 {/* Macro tiles */}
-                <div className="flex gap-3 pt-2">
+                <div className="flex gap-2 pt-2">
                   <NutriTile colorVariant="blue" label="Protein" value={totalNutrition.protein_g.toFixed(1)} unit="g" />
                   <NutriTile colorVariant="yellow" label="Lemak" value={totalNutrition.lemak_g.toFixed(1)} unit="g" />
                   <NutriTile colorVariant="green" label="Karbo" value={totalNutrition.karbo_g.toFixed(1)} unit="g" />
+                  <NutriTile colorVariant="purple" label="Serat" value={(totalNutrition.serat_g || 0).toFixed(1)} unit="g" />
                 </div>
 
                 {/* Timestamp */}
