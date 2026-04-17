@@ -1088,7 +1088,7 @@ export default function AnalyzePhoto() {
 
                     {/* Edit panel (Matches Gambar 4.1 Form Koreksi) */}
                         {isEditing && (
-                          <div id={`edit-panel-${index}`} className="bg-blue-50/50 rounded-2xl p-4 mb-4 border border-blue-100 shadow-inner">
+                          <div id={`edit-panel-${index}`} data-tour={index === 0 ? 'correction-form' : undefined} className="bg-blue-50/50 rounded-2xl p-4 mb-4 border border-blue-100 shadow-inner">
                             <div className="flex justify-between items-center mb-4">
                               <div className="text-sm font-bold text-slate-800 flex items-center gap-2">
                                 <Edit size={16} className="text-blue-500" /> Koreksi Makanan
@@ -1164,6 +1164,7 @@ export default function AnalyzePhoto() {
                         {!isEditing && (
                           <div data-tour={index === 0 ? 'edit-button' : undefined} className="flex justify-end gap-2 mt-4 pt-2 relative z-10 pl-[36px]">
                             <button 
+                              data-tour={index === 0 ? 'edit-btn' : undefined}
                               onClick={() => handleEditCard(index)} 
                               disabled={isBusyAction}
                               className="flex items-center justify-center gap-1.5 px-[16px] py-[8px] rounded-[10px] bg-white border border-[#E5E7EB] text-gray-600 hover:text-slate-800 hover:bg-gray-50 font-semibold text-[13px] transition-colors"
@@ -1218,6 +1219,7 @@ export default function AnalyzePhoto() {
                   </div>
                 </div>
                 <button 
+                  data-tour="add-food-btn"
                   onClick={handleOpenAddFood} 
                   disabled={isBusyAction} 
                   className="bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2.5 rounded-xl text-sm font-bold shadow-sm transition-colors flex items-center gap-1 shrink-0"
@@ -1228,7 +1230,7 @@ export default function AnalyzePhoto() {
             )}
 
             {addingFoodIndex === 'standalone' && detectionItems.length > 0 && (
-              <div id="add-food-panel" className="bg-white border-2 border-emerald-400 rounded-[20px] p-5 shadow-emerald-100/50 shadow-lg mt-6 relative overflow-hidden">
+              <div id="add-food-panel" data-tour="add-food-form" className="bg-white border-2 border-emerald-400 rounded-[20px] p-5 shadow-emerald-100/50 shadow-lg mt-6 relative overflow-hidden">
                 <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-emerald-400 to-teal-400" />
                 <div className="flex justify-between items-center mb-4 mt-1">
                   <h3 className="font-extrabold text-slate-800 text-sm flex items-center gap-2">
@@ -1302,6 +1304,7 @@ export default function AnalyzePhoto() {
                   <div className="mt-5 pt-4 border-t border-slate-100 flex justify-between items-center text-xs font-semibold text-slate-500">
                     <span>Makanan tidak ditemukan?</span>
                     <button 
+                      data-tour="request-link"
                       onClick={handleOpenTrainingRequest} 
                       disabled={isBusyAction} 
                       className="text-orange-500 hover:text-orange-600 font-bold"

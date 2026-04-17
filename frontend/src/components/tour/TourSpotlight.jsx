@@ -127,24 +127,41 @@ export default function TourSpotlight() {
     setTooltipPos({ top, left, arrowPos });
   }, [findTarget]);
 
-  // ── Auto-scroll + Retry finding target ─────────────────────────────────────
+  // ── Auto-click, auto-scroll + Retry finding target ──────────────────────────
   useEffect(() => {
     if (!isTourActive || !isSpotlightStep) return;
 
     let attempts = 0;
-    const maxAttempts = 10; // retry for ~3 seconds
+    const maxAttempts = 15; // retry for ~4.5 seconds
     let retryTimer = null;
+    let didAutoClick = false;
 
     const tryFind = () => {
+      // Step 1: If this step requires auto-clicking a button first, do it
+      if (step?.autoClick && !didAutoClick) {
+        const clickEl = document.querySelector(`[data-tour="${step.autoClick}"]`);
+        if (clickEl) {
+          clickEl.click();
+          didAutoClick = true;
+          // Wait for React to render the form
+          retryTimer = setTimeout(tryFind, 500);
+          return;
+        }
+        // If click target not found yet, keep retrying
+        if (attempts < maxAttempts) {
+          attempts++;
+          retryTimer = setTimeout(tryFind, 300);
+          return;
+        }
+      }
+
+      // Step 2: Find the spotlight target element
       const el = findTarget();
       if (el) {
-        
         const rect = el.getBoundingClientRect();
         const vpH = window.innerHeight;
-        // If element is smaller than 50% height, center it safely. Otherwise just top.
         const blockPos = rect.height < (vpH / 2) ? 'center' : 'start';
         el.scrollIntoView({ behavior: 'smooth', block: blockPos });
-        // Wait for scroll to finish, then update position
         setTimeout(updatePosition, 400);
       } else if (attempts < maxAttempts) {
         attempts++;
@@ -165,8 +182,25 @@ export default function TourSpotlight() {
         el.style.zIndex = '';
         el.style.pointerEvents = '';
       }
+      // Cleanup: close any form that was auto-opened
+      if (step?.autoClick) {
+        // Find and click any cancel/close button inside the spotlighted form
+        const formEl = document.querySelector(`[data-tour="${step.target}"]`);
+        if (formEl) {
+          const closeBtn = formEl.querySelector('button[class*="cancel"], button[class*="Batal"]')
+            || formEl.querySelector('button:has(svg)'); // the X close button
+          // Use a more reliable approach: look for buttons with "Batal" text or X icon
+          const allBtns = formEl.querySelectorAll('button');
+          for (const btn of allBtns) {
+            if (btn.textContent.includes('Batal') || btn.querySelector('svg.lucide-x')) {
+              btn.click();
+              break;
+            }
+          }
+        }
+      }
     };
-  }, [isTourActive, isSpotlightStep, currentStep, findTarget, updatePosition]);
+  }, [isTourActive, isSpotlightStep, currentStep, findTarget, updatePosition, step?.autoClick, step?.target]);
 
   // ── Elevate target element above overlay ────────────────────────────────────
   useEffect(() => {

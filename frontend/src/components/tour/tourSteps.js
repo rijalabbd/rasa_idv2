@@ -9,6 +9,7 @@
 //   description   : Penjelasan singkat
 //   tip           : (opsional) Tips tambahan
 //   waitForAction : 'upload' | 'detect' | null — auto-advance setelah aksi ini
+//   autoClick     : data-tour attr to auto-click before finding target
 //   features      : (opsional) List fitur untuk step gabungan
 //   fallbackTitle : Judul jika elemen target tidak ditemukan
 //   fallbackDesc  : Deskripsi jika elemen target tidak ditemukan
@@ -84,9 +85,10 @@ const TOUR_STEPS = [
   // ─── STEP 6: Koreksi / Edit ───────────────────────────────────────────────
   {
     type: 'spotlight',
-    target: 'edit-button',
+    autoClick: 'edit-btn',          // Auto-click tombol Edit
+    target: 'correction-form',      // Sorot form koreksi yang muncul
     title: '✏️ Koreksi Makanan',
-    description: 'AI salah menebak? Klik "Edit" lalu ketik nama makanan yang benar. Koreksimu membantu AI belajar!',
+    description: 'Ini adalah form koreksi. Jika AI salah menebak, ketik nama makanan yang benar lalu klik "Ganti".',
     waitForAction: null,
     fallbackTitle: 'Koreksi Makanan',
     fallbackDesc: 'Gunakan tombol Edit di kartu makanan untuk mengganti nama yang salah.',
@@ -95,9 +97,10 @@ const TOUR_STEPS = [
   // ─── STEP 7: Tambah / Missed Detection ────────────────────────────────────
   {
     type: 'spotlight',
-    target: 'add-food-area',
+    autoClick: 'add-food-btn',      // Auto-click tombol + Tambah
+    target: 'add-food-form',        // Sorot form pencarian makanan
     title: '➕ Tambah Makanan',
-    description: 'Ada makanan di piringmu yang tidak terdeteksi? Cari secara manual dengan mengetik namanya di sini.',
+    description: 'Ini adalah form pencarian. Ketik nama makanan yang terlewat, pilih dari daftar, lalu klik "Tambahkan".',
     waitForAction: null,
     fallbackTitle: 'Tambah Manual',
     fallbackDesc: 'Makanan tidak terdeteksi? Cari manual dengan nama.',
@@ -106,9 +109,10 @@ const TOUR_STEPS = [
   // ─── STEP 8: Ajukan Kelas Baru / Request Class ────────────────────────────
   {
     type: 'spotlight',
-    target: 'request-class',
+    autoClick: 'request-link',      // Auto-click link "Ajukan Kelas Baru"
+    target: 'request-class',        // Sorot form request
     title: '📝 Ajukan Makanan Baru',
-    description: 'Makanan khasmu belum dikenal sama sekali? Ajukan namanya agar bisa kami latih untuk dikenali di masa depan.',
+    description: 'Makanan belum ada di database? Ketik namanya di sini dan klik "Kirim Pengajuan" agar kami latih model AI.',
     waitForAction: null,
     fallbackTitle: 'Request Kelas Baru',
     fallbackDesc: 'Ajukan makanan baru agar dilatih oleh AI kami.',
