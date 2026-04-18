@@ -112,20 +112,20 @@ def _render_zip_contents(files: list[str], key_prefix: str):
 def render_export():
     """Render the Export Dataset view."""
 
-    st.markdown(h1("package", "Export Dataset"), unsafe_allow_html=True)
+    st.markdown(h1("package", "Ekspor Dataset"), unsafe_allow_html=True)
     st.divider()
 
     summary = get_export_summary()
 
     # ── Section 1: Combined JSONL export ─────────────────────────────────
-    st.markdown(h2("file-text", "Export Gabungan JSONL"), unsafe_allow_html=True)
-    st.caption("Export `feedback.jsonl` + `class_requests.jsonl` (tanpa gambar)")
+    st.markdown(h2("file-text", "Ekspor Gabungan JSONL"), unsafe_allow_html=True)
+    st.caption("Ekspor `feedback.jsonl` + `class_requests.jsonl` (tanpa gambar)")
 
     c1, c2 = st.columns([1, 1])
     with c1:
-        only_new_combined = st.toggle("Hanya data yang belum di-export", value=True, key="only_new_combined")
+        only_new_combined = st.toggle("Hanya data yang belum diekspor", value=True, key="only_new_combined")
     with c2:
-        if st.button("Batalkan Export Gabungan Terakhir", key="undo_combined"):
+        if st.button("Batalkan Ekspor Gabungan Terakhir", key="undo_combined"):
             # Combined affects both feedback and class_request, we use 'combined' type
             if do_undo_export("feedback"): # Combined currently marks logs as individual types
                 get_export_summary() # Refresh
@@ -167,15 +167,15 @@ def render_export():
 
     fb_t1, fb_t2 = st.columns([1, 1])
     with fb_t1:
-        only_new_fb = st.toggle("Hanya data Feedback yang belum di-export", value=True, key="only_new_fb")
+        only_new_fb = st.toggle("Hanya data Feedback yang belum diekspor", value=True, key="only_new_fb")
     with fb_t2:
-        if st.button("Batalkan Export Feedback Terakhir", key="undo_fb"):
+        if st.button("Batalkan Ekspor Feedback Terakhir", key="undo_fb"):
             if do_undo_export("feedback"):
                 st.rerun()
 
     fb_col1, fb_col2 = st.columns([1, 2])
     with fb_col1:
-        if st.button("Export Feedback YOLO", key="yolo_fb_btn", type="primary"):
+        if st.button("Ekspor Feedback YOLO", key="yolo_fb_btn", type="primary"):
             do_yolo_export("feedback", only_new_fb)
             st.rerun()
 
@@ -209,15 +209,15 @@ def render_export():
 
     cr_t1, cr_t2 = st.columns([1, 1])
     with cr_t1:
-        only_new_cr = st.toggle("Hanya data Class Request yang belum di-export", value=True, key="only_new_cr")
+        only_new_cr = st.toggle("Hanya data Class Request yang belum diekspor", value=True, key="only_new_cr")
     with cr_t2:
-        if st.button("Batalkan Export Class Request Terakhir", key="undo_cr"):
+        if st.button("Batalkan Ekspor Class Request Terakhir", key="undo_cr"):
             if do_undo_export("class_request"):
                 st.rerun()
 
     cr_col1, cr_col2 = st.columns([1, 2])
     with cr_col1:
-        if st.button("Export Class Request YOLO", key="yolo_cr_btn", type="primary"):
+        if st.button("Ekspor Class Request YOLO", key="yolo_cr_btn", type="primary"):
             do_yolo_export("class-requests", only_new_cr)
             st.rerun()
 
@@ -251,15 +251,15 @@ def render_export():
 
     md_t1, md_t2 = st.columns([1, 1])
     with md_t1:
-        only_new_md = st.toggle("Hanya data Missed Detection yang belum di-export", value=True, key="only_new_md")
+        only_new_md = st.toggle("Hanya data Missed Detection yang belum diekspor", value=True, key="only_new_md")
     with md_t2:
-        if st.button("Batalkan Export Missed Detection Terakhir", key="undo_md"):
+        if st.button("Batalkan Ekspor Missed Detection Terakhir", key="undo_md"):
             if do_undo_export("missed_detection"):
                 st.rerun()
 
     md_col1, md_col2 = st.columns([1, 2])
     with md_col1:
-        if st.button("Export Missed Detection YOLO", key="yolo_md_btn", type="primary"):
+        if st.button("Ekspor Missed Detection YOLO", key="yolo_md_btn", type="primary"):
             do_yolo_export("missed", only_new_md)
             st.rerun()
 

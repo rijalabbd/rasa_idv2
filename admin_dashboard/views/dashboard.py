@@ -103,7 +103,7 @@ def render_dashboard():
     """Render the Main Dashboard view."""
 
     # Page title with icon
-    st.markdown(h1("activity", "Dashboard Overview"), unsafe_allow_html=True)
+    st.markdown(h1("activity", "Ringkasan Dashboard"), unsafe_allow_html=True)
     st.divider()
 
     # Initial Data Load
@@ -118,9 +118,9 @@ def render_dashboard():
     # Summary Section
     # -------------------------------------------------------------------------
 
-    st.markdown(h2("bar-chart-2", "Summary Statistics"), unsafe_allow_html=True)
+    st.markdown(h2("bar-chart-2", "Statistik Ringkasan"), unsafe_allow_html=True)
 
-    if st.button("Refresh Summary", key="refresh_summary_btn"):
+    if st.button("Muat Ulang", key="refresh_summary_btn"):
         fetch_summary()
         st.rerun()
 
@@ -136,33 +136,33 @@ def render_dashboard():
 
     with col2:
         st.metric(
-            label="Pending Feedback",
+            label="Feedback Tertunda",
             value=summary.get("feedback_pending", 0) if summary else "-",
             help="is_processed = false"
         )
 
     with col3:
         st.metric(
-            label="Total Class Requests",
+            label="Total Permintaan Kelas",
             value=summary.get("class_requests_total", 0) if summary else "-"
         )
 
     with col4:
         st.metric(
-            label="Pending Class Requests",
+            label="Permintaan Kelas Tertunda",
             value=summary.get("class_requests_pending", 0) if summary else "-",
             help="is_exported = false"
         )
 
     with col5:
         st.metric(
-            label="Missed Detections",
+            label="Deteksi Terlewat",
             value=summary.get("missed_detections_total", 0) if summary else "-",
-            help="Model failed to detect, user added manually"
+            help="Makanan tidak terdeteksi, ditambahkan manual oleh pengguna"
         )
 
     if st.session_state.summary_error:
-        st.warning(f"Summary fetch error: {st.session_state.summary_error}")
+        st.warning(f"Gagal memuat ringkasan: {st.session_state.summary_error}")
 
     st.divider()
 
@@ -170,15 +170,15 @@ def render_dashboard():
     # Model Management Section
     # -------------------------------------------------------------------------
 
-    st.markdown(h2("cpu", "Model Management"), unsafe_allow_html=True)
+    st.markdown(h2("cpu", "Manajemen Model"), unsafe_allow_html=True)
 
     model_col1, model_col2 = st.columns(2)
 
     # Model Status Panel
     with model_col1:
-        st.markdown(labeled_section("monitor", "Current Model Status"), unsafe_allow_html=True)
+        st.markdown(labeled_section("monitor", "Status Model Aktif"), unsafe_allow_html=True)
 
-        if st.button("Refresh Status", key="refresh_model_btn"):
+        if st.button("Muat Ulang", key="refresh_model_btn"):
             fetch_model_status()
             st.rerun()
 
@@ -192,37 +192,37 @@ def render_dashboard():
             ready = status.get("ready", False)
 
             if active_model and ready:
-                st.info(f"**Active Model:** `{active_model}`")
+                st.info(f"**Model Aktif:** `{active_model}`")
                 st.caption(
                     f"Size: {_fmt_size(size_bytes)} | "
                     f"SHA256: {sha256[:12]}... | "
                     f"Loaded: {format_datetime(loaded_at)}"
                 )
             elif active_model and not ready:
-                st.warning(f"Model `{active_model}` found but not loaded yet")
+                st.warning(f"Model `{active_model}` ditemukan tapi belum dimuat")
             else:
-                st.warning("No active model file found (active.pt missing)")
-                st.caption("Upload a .pt model to activate it")
+                st.warning("File model aktif tidak ditemukan (active.pt hilang)")
+                st.caption("Unggah file .pt untuk mengaktifkannya")
         elif st.session_state.model_status_error:
             st.error(st.session_state.model_status_error)
         else:
-            st.info("Loading status...")
+            st.info("Memuat status...")
 
     # Model Upload Panel
     with model_col2:
-        st.markdown(labeled_section("upload", "Upload New Model"), unsafe_allow_html=True)
+        st.markdown(labeled_section("upload", "Unggah Model Baru"), unsafe_allow_html=True)
 
         uploaded_file = st.file_uploader(
-            "Choose a .pt file",
+            "Pilih file .pt",
             type=["pt"],
             key="model_uploader",
-            help="Upload a PyTorch model file (.pt)"
+            help="Unggah file model PyTorch (.pt)"
         )
 
         if uploaded_file is not None:
-            st.caption(f"Selected: `{uploaded_file.name}` ({uploaded_file.size:,} bytes)")
+            st.caption(f"Dipilih: `{uploaded_file.name}` ({uploaded_file.size:,} bytes)")
 
-            if st.button("Upload & Activate Model", key="upload_model_btn", type="primary"):
+            if st.button("Unggah & Aktifkan Model", key="upload_model_btn", type="primary"):
                 do_upload_model(uploaded_file)
                 st.rerun()
 
@@ -235,20 +235,20 @@ def render_dashboard():
     # Active Model Classes Table
     # -------------------------------------------------------------------------
     st.divider()
-    st.markdown(h2("list", "Active Model Classes"), unsafe_allow_html=True)
+    st.markdown(h2("list", "Kelas Model Aktif"), unsafe_allow_html=True)
     
     col_classes_1, col_classes_2 = st.columns([3, 1])
     with col_classes_1:
-        st.markdown("Class IDs and Names extracted from the currently active YOLO model.")
+        st.markdown("Daftar kelas yang tersedia di model YOLO aktif.")
     with col_classes_2:
-        if st.button("Refresh Classes", key="refresh_classes_btn"):
+        if st.button("Muat Ulang", key="refresh_classes_btn"):
             fetch_model_classes()
             st.rerun()
 
     if getattr(st.session_state, "model_classes_error", None):
-        st.error(f"Failed to load model classes: {st.session_state.model_classes_error}")
+        st.error(f"Gagal memuat kelas model: {st.session_state.model_classes_error}")
     elif not getattr(st.session_state, "model_classes_loaded", False) and not getattr(st.session_state, "model_classes", []):
-        st.info("No classes found. Please ensure an active model is loaded.")
+        st.info("Tidak ada kelas ditemukan. Pastikan model aktif sudah dimuat.")
     else:
         classes = getattr(st.session_state, "model_classes", [])
         if classes:
@@ -265,4 +265,4 @@ def render_dashboard():
                 hide_index=True,
             )
         else:
-            st.info("The active model has no classes defined.")
+            st.info("Model aktif tidak memiliki kelas.")

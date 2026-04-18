@@ -178,10 +178,10 @@ with st.sidebar:
 
     # Page navigation
     _nav_icons = {
-        "Dashboard":       "activity",
-        "Mappings":        "link",
-        "TKPI Import":     "database",
-        "Export Dataset":  "package",
+        "Dashboard":         "activity",
+        "Pencocokan":        "link",
+        "Import TKPI":       "database",
+        "Ekspor Dataset":    "package",
     }
     selected_page = st.radio(
         "Go to",
@@ -194,7 +194,7 @@ with st.sidebar:
 
     # Tools section
     st.markdown(
-        icon_md("wrench", "**Tools**", size=14),
+        icon_md("wrench", "**Alat**", size=14),
         unsafe_allow_html=True,
     )
 
@@ -213,9 +213,9 @@ with st.sidebar:
         )
 
     # Request Debugger
-    with st.expander("Request Debugger"):
+    with st.expander("Debug Request"):
         st.markdown(
-            icon_md("search", "Last Request", size=13),
+            icon_md("search", "Request Terakhir", size=13),
             unsafe_allow_html=True,
         )
         if st.session_state.last_request_info:
@@ -228,7 +228,7 @@ with st.sidebar:
                 st.code(req_id, language=None)
                 st.caption("Request ID (Header)")
         else:
-            st.caption("No requests made yet.")
+            st.caption("Belum ada request.")
 
 
 # =============================================================================
@@ -237,11 +237,11 @@ with st.sidebar:
 
 if selected_page == "Dashboard":
     render_dashboard()
-elif selected_page == "Mappings":
+elif selected_page == "Pencocokan":
     render_mappings()
-elif selected_page == "TKPI Import":
+elif selected_page == "Import TKPI":
     render_tkpi_import()
-elif selected_page == "Export Dataset":
+elif selected_page == "Ekspor Dataset":
     render_export()
 
 # Footer

@@ -54,7 +54,7 @@ def _show_error_banner(data, status: int, ref_id: str | None, action: str):
 def _show_summary(result: dict, ref_id: str | None):
     """Display import summary metrics."""
     dry_run = result.get("dry_run", True)
-    mode_label = "Dry-run Result" if dry_run else "Commit Result"
+    mode_label = "Hasil Uji Coba" if dry_run else "Hasil Penerapan"
 
     st.markdown(h2("search" if dry_run else "check-circle", mode_label), unsafe_allow_html=True)
 
@@ -62,23 +62,23 @@ def _show_summary(result: dict, ref_id: str | None):
         st.caption(f"Ref: `{ref_id}`")
 
     c1, c2, c3, c4 = st.columns(4)
-    c1.metric("Rows Total", result.get("rows_total", 0))
-    c2.metric("Processed", result.get("processed_count", 0))
-    c3.metric("Skipped", result.get("skipped_count", 0))
-    c4.metric("Errors", result.get("errors_count", 0))
+    c1.metric("Total Baris", result.get("rows_total", 0))
+    c2.metric("Diproses", result.get("processed_count", 0))
+    c3.metric("Dilewati", result.get("skipped_count", 0))
+    c4.metric("Error", result.get("errors_count", 0))
 
     c5, c6, c7, c8 = st.columns(4)
     if dry_run:
-        c5.metric("New (would insert)", result.get("new_count", 0))
-        c6.metric("Existing (would update)", result.get("existing_count", 0))
+        c5.metric("Baru (akan ditambahkan)", result.get("new_count", 0))
+        c6.metric("Sudah Ada (akan diperbarui)", result.get("existing_count", 0))
     else:
-        c5.metric("Inserted", result.get("inserted_count", 0))
-        c6.metric("Updated", result.get("updated_count", 0))
-    c7.metric("Warnings", result.get("warnings_count", 0))
+        c5.metric("Ditambahkan", result.get("inserted_count", 0))
+        c6.metric("Diperbarui", result.get("updated_count", 0))
+    c7.metric("Peringatan", result.get("warnings_count", 0))
     if dry_run:
-        c8.metric("Existing in DB", result.get("existing_count", 0))
+        c8.metric("Sudah Ada di DB", result.get("existing_count", 0))
     else:
-        c8.metric("New (inserted)", result.get("new_count", 0))
+        c8.metric("Baru (ditambahkan)", result.get("new_count", 0))
 
 
 def _show_issues(result: dict, kind: str):
@@ -141,15 +141,15 @@ def _show_issues(result: dict, kind: str):
 
 def render_tkpi_import():
     """Render the TKPI CSV Import view."""
-    st.markdown(h1("database", "TKPI CSV Import"), unsafe_allow_html=True)
-    st.caption("Upload CSV → Validate (dry-run) → Review → Commit")
+    st.markdown(h1("database", "Import CSV TKPI"), unsafe_allow_html=True)
+    st.caption("Unggah CSV → Validasi (Uji Coba) → Tinjau → Terapkan")
     st.divider()
 
     # ── File uploader ────────────────────────────────────────────────
     uploaded_file = st.file_uploader(
-        "Upload TKPI CSV file",
+        "Unggah file CSV TKPI",
         type=["csv"],
-        help="UTF-8, comma or semicolon delimiter. Required columns: tkpi_code, name",
+        help="UTF-8, pemisah koma atau titik koma. Kolom wajib: tkpi_code, name",
         key="tkpi_csv_file",
     )
 
@@ -177,7 +177,7 @@ def render_tkpi_import():
     with col_dry:
         dry_disabled = uploaded_file is None
         if st.button(
-            "Validate (Dry-run)",
+            "Validasi (Uji Coba)",
             disabled=dry_disabled,
             use_container_width=True,
             type="primary",
@@ -188,7 +188,7 @@ def render_tkpi_import():
             st.session_state.tkpi_commit_ref = None
             st.session_state.tkpi_validated_hash = None
 
-            with st.spinner("Validating CSV..."):
+            with st.spinner("Memvalidasi CSV..."):
                 data, status, ref = _call_import(uploaded_file, dry_run=True)
 
             if status == 200 and data:
@@ -211,7 +211,7 @@ def render_tkpi_import():
     )
 
     if file_changed:
-        st.warning("File changed since validation. Please run **Validate (Dry-run)** again.")
+        st.warning("File berubah sejak validasi. Jalankan **Validasi (Uji Coba)** ulang.")
 
     # ── Commit gate ──────────────────────────────────────────────────
     has_dry_run = dry_result is not None
@@ -222,7 +222,7 @@ def render_tkpi_import():
     confirm_checked = False
     if has_dry_run and has_zero_errors and file_present and hash_matches:
         confirm_checked = st.checkbox(
-            "I understand this will write to the database",
+            "Saya paham ini akan menulis ke database",
             key="tkpi_commit_confirm",
         )
 
@@ -236,7 +236,7 @@ def render_tkpi_import():
 
     with col_commit:
         if st.button(
-            "Commit Import",
+            "Terapkan Import",
             disabled=not can_commit,
             use_container_width=True,
             type="secondary",
@@ -244,20 +244,20 @@ def render_tkpi_import():
             st.session_state.tkpi_commit_result = None
             st.session_state.tkpi_commit_ref = None
 
-            with st.spinner("Importing into database..."):
+            with st.spinner("Mengimpor ke database..."):
                 data, status, ref = _call_import(uploaded_file, dry_run=False)
 
             if status == 200 and data:
                 st.session_state.tkpi_commit_result = data
                 st.session_state.tkpi_commit_ref = ref
-                st.toast("Import committed successfully!")
+                st.toast("Import berhasil diterapkan!")
             else:
                 _show_error_banner(data, status, ref, "Commit")
 
             st.rerun()
 
     if not can_commit and has_dry_run and not has_zero_errors:
-        st.warning("Cannot commit: fix CSV errors first, then re-validate.")
+        st.warning("Tidak bisa menerapkan: perbaiki error CSV terlebih dahulu, lalu validasi ulang.")
 
     st.divider()
 
@@ -285,7 +285,7 @@ def render_tkpi_import():
     st.divider()
     st.markdown(h2("list", "Data TKPI Saat Ini"), unsafe_allow_html=True)
 
-    if st.button("Refresh Data", key="tkpi_refresh"):
+    if st.button("Muat Ulang Data", key="tkpi_refresh"):
         st.session_state.tkpi_preview_data = None
         st.rerun()
 
