@@ -1,3 +1,4 @@
 # Admin Dashboard Dependencies
 streamlit==1.53.0
 requests>=2.31.0
+extra-streamlit-components>=0.1.71

@@ -14,6 +14,11 @@ from views.dashboard import render_dashboard
 from views.mappings import render_mappings
 from views.export import render_export
 from views.tkpi_import import render_tkpi_import
+import extra_streamlit_components as stx
+
+@st.cache_resource(experimental_allow_widgets=True)
+def get_cookie_manager():
+    return stx.CookieManager()
 
 # =============================================================================
 # Page Configuration (MUST BE FIRST)
@@ -72,19 +77,34 @@ def _render_login_page():
 
         if submitted:
             if _check_password(password):
+                # Set cookie that expires in 1 day
+                cookie_manager.set("admin_auth", "true", max_age=86400)
                 st.session_state["authenticated"] = True
                 st.rerun()
             else:
                 st.error("❌ Password salah. Coba lagi.")
 
 
-# Cek autentikasi — harus sebelum konten apapun ditampilkan
+cookie_manager = get_cookie_manager()
+
+# Cek autentikasi dari session atau cookie
 if "authenticated" not in st.session_state:
-    st.session_state["authenticated"] = False
+    # Try reading from cookie manager. If it returns "true", the user is auth'd.
+    # Note: on first render, cookie_manager might return None for a fraction of a second.
+    cookie_val = cookie_manager.get("admin_auth")
+    if cookie_val == "true":
+        st.session_state["authenticated"] = True
+    else:
+        st.session_state["authenticated"] = False
 
 if not st.session_state["authenticated"]:
-    _render_login_page()
-    st.stop()  # Hentikan eksekusi — konten dashboard tidak akan dirender
+    # Check again if cookie is just being loaded to prevent flash of login screen
+    if cookie_manager.get("admin_auth") == "true":
+        st.session_state["authenticated"] = True
+        st.rerun()
+    else:
+        _render_login_page()
+        st.stop()  # Hentikan eksekusi — konten dashboard tidak akan dirender
 
 # =============================================================================
 # Session State Initialization
@@ -171,6 +191,7 @@ with st.sidebar:
 
     # Tombol Logout
     if st.button("🔓 Logout", use_container_width=True):
+        cookie_manager.delete("admin_auth")
         st.session_state["authenticated"] = False
         st.rerun()
 
