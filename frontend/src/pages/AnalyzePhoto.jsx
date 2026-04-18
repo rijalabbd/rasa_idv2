@@ -681,21 +681,14 @@ export default function AnalyzePhoto() {
                 </div>
               )}
 
-              {/* Quick Action Buttons */}
+              {/* Action Button */}
               <div className="flex gap-2.5">
                 <button 
                   onClick={() => { setDetectionItems([]); setAnalysisId(null); setPreviewUrl(null); setSelectedFile(null); setError(null); resetInlineStates(); }}
                   disabled={isBusyAction} 
-                  className={`flex-1 font-bold py-2.5 px-3 rounded-xl flex items-center justify-center gap-2 transition-all text-sm active:scale-95 border-2 ${detectionItems.length === 0 ? 'bg-amber-500 hover:bg-amber-600 text-white border-amber-500 shadow-sm shadow-amber-200' : 'bg-white hover:bg-slate-50 text-slate-600 border-slate-200'}`}
+                  className={`w-full font-bold py-3 px-4 rounded-xl flex items-center justify-center gap-2 transition-all text-sm active:scale-95 border-2 ${detectionItems.length === 0 ? 'bg-amber-500 hover:bg-amber-600 text-white border-amber-500 shadow-sm shadow-amber-200' : 'bg-white hover:bg-slate-50 hover:border-slate-300 text-slate-700 border-slate-200'}`}
                 >
-                  <Camera size={16} /> Foto Ulang
-                </button>
-                <button 
-                  onClick={handleOpenAddFood}
-                  disabled={isBusyAction || addingFoodIndex !== null} 
-                  className="flex-1 bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-2.5 px-3 rounded-xl flex items-center justify-center gap-2 transition-all text-sm active:scale-95 shadow-sm shadow-emerald-200 border-2 border-emerald-500 disabled:opacity-50"
-                >
-                  <Plus size={16} /> Tambah Makanan
+                  <Camera size={18} /> Ambil Foto Baru
                 </button>
               </div>
 
@@ -817,11 +810,16 @@ export default function AnalyzePhoto() {
                   <div className="bg-white border-2 border-emerald-300 rounded-[20px] p-6 shadow-lg relative overflow-hidden">
                     <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-emerald-400 via-teal-400 to-cyan-400" />
                     
-                    <div className="flex justify-between items-center mb-4 mt-1">
-                      <h3 className="font-extrabold text-slate-800 text-sm flex items-center gap-2">
-                        <Search size={16} className="text-emerald-500" /> Cari & Tambah Makanan
-                      </h3>
-                      <button onClick={handleCloseSmartSearch} className="text-slate-400 hover:text-slate-600 p-1.5 bg-slate-50 rounded-full transition-colors hover:bg-slate-100">
+                    <div className="flex justify-between items-start mb-5 mt-1">
+                      <div>
+                        <h3 className="font-extrabold text-slate-800 text-base flex items-center gap-2 mb-1.5">
+                          <Search size={18} className="text-emerald-500" /> Tambah Makanan Manual
+                        </h3>
+                        <p className="text-xs text-slate-500 font-medium leading-relaxed pr-4">
+                          Gunakan pencarian ini untuk menambahkan informasi gizi makanan jika tidak terdeteksi otomatis oleh AI di dalam foto Anda.
+                        </p>
+                      </div>
+                      <button onClick={handleCloseSmartSearch} className="mt-0.5 shrink-0 text-slate-400 hover:text-slate-600 p-2 bg-slate-50 hover:bg-slate-100 rounded-full transition-colors shadow-sm border border-slate-100">
                         <X size={16} strokeWidth={3} />
                       </button>
                     </div>
