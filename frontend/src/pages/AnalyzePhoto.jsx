@@ -604,49 +604,62 @@ export default function AnalyzePhoto() {
             {/* === KOLOM KIRI: Foto & Ringkasan (Sticky) === */}
             <div className="left-col w-full lg:w-[400px] xl:w-[450px] shrink-0 lg:sticky lg:top-28 space-y-6 animate-slide-up-fade opacity-0" style={{ animationDelay: '0ms' }}>
 
-            {/* Detection Summary Card */}
-            <div data-tour="summary-card" className={`border rounded-3xl p-6 text-left shadow-sm relative overflow-hidden transition-colors ${detectionItems.length === 0 ? 'bg-[#FFFBEB] border-amber-200' : 'bg-gradient-to-b from-teal-50 to-white border-teal-100'}`}>
+            {/* Minimalist Image Hero Card */}
+            <div data-tour="summary-card" className={`group relative rounded-[24px] overflow-hidden shadow-sm border transition-all duration-700 hover:shadow-[0_8px_30px_rgb(0,0,0,0.12)] ${detectionItems.length === 0 ? 'bg-[#FFFBEB] border-amber-200' : 'bg-slate-900 border-slate-800'}`}>
               
-              <div className="flex items-start justify-between mb-4">
-                <div className={`rounded-2xl p-3.5 shadow-md relative w-fit ${detectionItems.length === 0 ? 'bg-[#F59E0B]' : 'bg-[#10B981]'}`}>
-                  <Camera size={26} className="text-white" />
-                  <div className={`absolute -top-2 -right-2 bg-white text-[9px] font-bold px-1.5 py-0.5 rounded shadow-sm border ${detectionItems.length === 0 ? 'text-amber-600 border-amber-100' : 'text-[#10b981] border-emerald-100'}`}>AI</div>
-                </div>
-                
-                {detectionItems.length === 0 && (
-                  <div className="bg-amber-100 text-amber-700 text-[10px] font-bold px-2 py-1 rounded-md uppercase tracking-wider">
-                    Perhatian
+                {/* Image Container with Hover Zoom Animation */}
+                {previewUrl && (
+                  <div className="relative w-full flex justify-center items-center overflow-hidden transition-transform duration-700 ease-out group-hover:scale-[1.02]">
+                    {detectionItems.length > 0 ? (
+                      <div className="w-full relative flex justify-center">
+                        <BoundingBoxOverlay imageUrl={previewUrl} detections={detectionItems} />
+                      </div>
+                    ) : (
+                      <div className="relative w-full flex justify-center">
+                        <img src={previewUrl} alt="Uploaded preview" className="block max-h-[24rem] w-auto max-w-full object-contain" />
+                      </div>
+                    )}
+
+                    {/* Edge-to-edge Overlay Gradient for Text Legibility */}
+                    <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-transparent to-black/80 pointer-events-none" />
+
+                    {/* Top Floating Header */}
+                    <div className="absolute top-0 left-0 w-full p-5 sm:p-6 flex justify-between items-start z-10 pointer-events-none">
+                      <div className="flex flex-col animate-in slide-in-from-top-4 duration-700 fade-in text-left">
+                        <span className="text-white text-lg sm:text-2xl font-black tracking-tight drop-shadow-md flex items-center gap-2">
+                          {detectionItems.length > 0 ? (
+                            <>Hasil Deteksi <CheckCircle2 size={20} strokeWidth={3} className="text-emerald-400" /></>
+                          ) : (
+                            <>Tidak Terdeteksi <AlertTriangle size={20} strokeWidth={3} className="text-amber-400" /></>
+                          )}
+                        </span>
+                        <span className="text-white/80 text-xs sm:text-sm font-semibold tracking-wide drop-shadow-md mt-0.5 text-left">
+                          {detectionItems.length} objek ditemukan
+                        </span>
+                      </div>
+                      
+                      {detectionItems.length === 0 && (
+                        <div className="bg-amber-500/90 backdrop-blur-sm text-white text-[10px] font-bold px-3 py-1.5 rounded-full shadow-lg animate-pulse uppercase tracking-wider">
+                          Perhatian
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Bottom Floating Badges */}
+                    <div className="absolute bottom-5 left-5 right-5 flex justify-between items-end z-10 pointer-events-none">
+                      <div className="flex gap-2">
+                        {detectionItems.length > 0 && avgConf !== null && (
+                          <div className="bg-white/20 backdrop-blur-md text-white text-xs sm:text-sm font-extrabold px-3 py-1.5 sm:py-2 rounded-xl shadow-[0_4px_12px_rgba(0,0,0,0.2)] border border-white/20 flex items-center gap-2 animate-in slide-in-from-bottom-4 duration-700 fade-in">
+                            ✨ AI Confidence: <span className="text-emerald-300">{avgConf}%</span>
+                          </div>
+                        )}
+                      </div>
+                      <div className="bg-black/40 backdrop-blur-md text-white/70 text-[9px] font-bold px-2.5 py-1 rounded-lg border border-white/10 uppercase tracking-widest hidden sm:block delay-300 animate-in fade-in fill-mode-both">
+                        {detectionItems.length === 0 ? 'Foto Asli' : 'YOLOv8-Indonesian'}
+                      </div>
+                    </div>
                   </div>
                 )}
-              </div>
-              
-              <div className={`inline-block border text-[10px] font-bold px-3 py-1 rounded-full mb-3 uppercase tracking-wide ${detectionItems.length === 0 ? 'bg-white border-amber-200 text-amber-600' : 'bg-emerald-50 border-emerald-200 text-[#10b981]'}`}>
-                Model YOLOv8-Indonesian
-              </div>
-              
-              <div className={`summary-count text-4xl font-extrabold mb-1 tracking-tight ${detectionItems.length === 0 ? 'text-[#0f172a]' : 'text-[#10b981]'}`}>
-                <span className={detectionItems.length === 0 ? 'text-[#F59E0B]' : ''}>{detectionItems.length}</span> Makanan
-              </div>
-              <div className="text-sm font-medium text-slate-500 mb-5">Berhasil Terdeteksi</div>
-              
-              {avgConf !== null && detectionItems.length > 0 && (
-                <div className="flex items-center justify-start gap-1.5 text-sm font-medium text-slate-600 mb-6">
-                  Confidence rata-rata <span className="text-emerald-500 font-bold ml-1">{avgConf}%</span> <CheckCircle2 size={16} className="text-emerald-500" />
-                </div>
-              )}
-
-              {/* Bounding box image / Preview */}
-              {previewUrl && (
-                <div className={`mt-4 rounded-[20px] overflow-hidden shadow-sm relative border-[6px] ${detectionItems.length === 0 ? 'border-white bg-slate-100' : 'border-white bg-slate-900'}`}>
-                  {detectionItems.length > 0 ? (
-                    <BoundingBoxOverlay imageUrl={previewUrl} detections={detectionItems} />
-                  ) : (
-                    <img src={previewUrl} alt="Uploaded preview" className="w-full object-cover" />
-                  )}
-                  <div className={`absolute bottom-2 left-2 backdrop-blur-md text-white text-[9px] uppercase font-bold px-2 py-1 rounded ${detectionItems.length === 0 ? 'bg-black/40' : 'bg-black/60'}`}>Foto Anda</div>
-                  {detectionItems.length > 0 && <div className="absolute bottom-2 right-2 bg-emerald-500 text-white text-[9px] uppercase font-bold px-2 py-1 rounded">{detectionItems.length} objek</div>}
-                </div>
-              )}
             </div>
 
             </div>
