@@ -604,63 +604,102 @@ export default function AnalyzePhoto() {
             {/* === KOLOM KIRI: Foto & Ringkasan (Sticky) === */}
             <div className="left-col w-full lg:w-[400px] xl:w-[450px] shrink-0 lg:sticky lg:top-28 space-y-6 animate-slide-up-fade opacity-0" style={{ animationDelay: '0ms' }}>
 
-            {/* Minimalist Image Hero Card */}
-            <div data-tour="summary-card" className={`group relative rounded-[24px] overflow-hidden shadow-sm border transition-all duration-700 hover:shadow-[0_8px_30px_rgb(0,0,0,0.12)] ${detectionItems.length === 0 ? 'bg-[#FFFBEB] border-amber-200' : 'bg-slate-900 border-slate-800'}`}>
+            {/* Detection Summary Card — Balanced White Card */}
+            <div data-tour="summary-card" className={`bg-white rounded-[24px] p-5 sm:p-6 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] border border-slate-100 transition-all duration-500 ${detectionItems.length === 0 ? 'bg-[#FFFBEB] border-amber-200' : ''}`}>
               
-                {/* Image Container with Hover Zoom Animation */}
-                {previewUrl && (
-                  <div className="relative w-full flex justify-center items-center overflow-hidden transition-transform duration-700 ease-out group-hover:scale-[1.02]">
-                    {detectionItems.length > 0 ? (
-                      <div className="w-full relative flex justify-center">
-                        <BoundingBoxOverlay imageUrl={previewUrl} detections={detectionItems} />
-                      </div>
-                    ) : (
-                      <div className="relative w-full flex justify-center">
-                        <img src={previewUrl} alt="Uploaded preview" className="block max-h-[24rem] w-auto max-w-full object-contain" />
-                      </div>
-                    )}
-
-                    {/* Edge-to-edge Overlay Gradient for Text Legibility */}
-                    <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-transparent to-black/80 pointer-events-none" />
-
-                    {/* Top Floating Header */}
-                    <div className="absolute top-0 left-0 w-full p-5 sm:p-6 flex justify-between items-start z-10 pointer-events-none">
-                      <div className="flex flex-col animate-in slide-in-from-top-4 duration-700 fade-in text-left">
-                        <span className="text-white text-lg sm:text-2xl font-black tracking-tight drop-shadow-md flex items-center gap-2">
-                          {detectionItems.length > 0 ? (
-                            <>Hasil Deteksi <CheckCircle2 size={20} strokeWidth={3} className="text-emerald-400" /></>
-                          ) : (
-                            <>Tidak Terdeteksi <AlertTriangle size={20} strokeWidth={3} className="text-amber-400" /></>
-                          )}
-                        </span>
-                        <span className="text-white/80 text-xs sm:text-sm font-semibold tracking-wide drop-shadow-md mt-0.5 text-left">
-                          {detectionItems.length} objek ditemukan
-                        </span>
-                      </div>
-                      
-                      {detectionItems.length === 0 && (
-                        <div className="bg-amber-500/90 backdrop-blur-sm text-white text-[10px] font-bold px-3 py-1.5 rounded-full shadow-lg animate-pulse uppercase tracking-wider">
-                          Perhatian
-                        </div>
-                      )}
+              {/* Card Header */}
+              <div className="flex items-center justify-between mb-5">
+                <div className="flex items-center gap-3">
+                  <div className={`rounded-xl p-2.5 shadow-sm ${detectionItems.length === 0 ? 'bg-amber-500 shadow-amber-200' : 'bg-emerald-500 shadow-emerald-200'}`}>
+                    <Camera size={22} className="text-white" />
+                  </div>
+                  <div>
+                    <div className="font-extrabold text-slate-800 text-base sm:text-lg leading-tight">
+                      {detectionItems.length > 0 ? 'Hasil Deteksi' : 'Tidak Terdeteksi'}
                     </div>
-
-                    {/* Bottom Floating Badges */}
-                    <div className="absolute bottom-5 left-5 right-5 flex justify-between items-end z-10 pointer-events-none">
-                      <div className="flex gap-2">
-                        {detectionItems.length > 0 && avgConf !== null && (
-                          <div className="bg-white/20 backdrop-blur-md text-white text-xs sm:text-sm font-extrabold px-3 py-1.5 sm:py-2 rounded-xl shadow-[0_4px_12px_rgba(0,0,0,0.2)] border border-white/20 flex items-center gap-2 animate-in slide-in-from-bottom-4 duration-700 fade-in">
-                            ✨ AI Confidence: <span className="text-emerald-300">{avgConf}%</span>
-                          </div>
-                        )}
-                      </div>
-                      <div className="bg-black/40 backdrop-blur-md text-white/70 text-[9px] font-bold px-2.5 py-1 rounded-lg border border-white/10 uppercase tracking-widest hidden sm:block delay-300 animate-in fade-in fill-mode-both">
-                        {detectionItems.length === 0 ? 'Foto Asli' : 'YOLOv8-Indonesian'}
-                      </div>
+                    <div className="text-xs font-medium text-slate-400">
+                      {detectionItems.length > 0 ? `${detectionItems.length} makanan ditemukan` : 'Coba foto ulang atau tambah manual'}
                     </div>
                   </div>
+                </div>
+                {detectionItems.length === 0 && (
+                  <div className="bg-amber-100 text-amber-700 text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider animate-pulse">
+                    Perhatian
+                  </div>
                 )}
+              </div>
+
+              {/* Image with Bounding Boxes */}
+              {previewUrl && (
+                <div className="group relative rounded-2xl overflow-hidden bg-slate-900 mb-5">
+                  <div className="relative w-full flex justify-center transition-transform duration-700 ease-out group-hover:scale-[1.02]">
+                    {detectionItems.length > 0 ? (
+                      <BoundingBoxOverlay imageUrl={previewUrl} detections={detectionItems} />
+                    ) : (
+                      <img src={previewUrl} alt="Uploaded preview" className="block max-h-[22rem] w-auto max-w-full object-contain" />
+                    )}
+                  </div>
+                  {/* Floating bottom gradient */}
+                  <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-black/60 to-transparent pointer-events-none" />
+                  {/* Bottom floating badges */}
+                  <div className="absolute bottom-3 left-3 right-3 flex justify-between items-end z-10 pointer-events-none">
+                    {detectionItems.length > 0 && avgConf !== null && (
+                      <div className="bg-white/20 backdrop-blur-md text-white text-xs font-bold px-2.5 py-1.5 rounded-lg border border-white/20 flex items-center gap-1.5 animate-in slide-in-from-bottom-2 duration-500 fade-in">
+                        <Target size={12} /> {avgConf}% akurasi
+                      </div>
+                    )}
+                    <div className="bg-black/40 backdrop-blur-md text-white/70 text-[9px] font-bold px-2 py-1 rounded-md border border-white/10 uppercase tracking-widest">
+                      {detectionItems.length > 0 ? `${detectionItems.length} objek` : 'Foto Asli'}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Stat Tiles Row */}
+              {detectionItems.length > 0 && (
+                <div className="flex gap-3 mb-5">
+                  <div className="flex-1 bg-gradient-to-br from-emerald-50/80 to-emerald-100/50 border border-emerald-100 rounded-2xl py-3 px-2 text-center shadow-sm">
+                    <div className="text-xl font-black text-slate-800 leading-none mb-1">{detectionItems.length}</div>
+                    <div className="text-[10px] font-bold text-emerald-600 uppercase tracking-wider">Objek</div>
+                  </div>
+                  <div className="flex-1 bg-gradient-to-br from-blue-50/80 to-blue-100/50 border border-blue-100 rounded-2xl py-3 px-2 text-center shadow-sm">
+                    <div className="text-xl font-black text-slate-800 leading-none mb-1">{avgConf ?? '-'}<span className="text-xs font-bold text-slate-400">%</span></div>
+                    <div className="text-[10px] font-bold text-blue-600 uppercase tracking-wider">Akurasi AI</div>
+                  </div>
+                  {totalNutrition && (
+                    <div className="flex-1 bg-gradient-to-br from-orange-50/80 to-orange-100/50 border border-orange-100 rounded-2xl py-3 px-2 text-center shadow-sm">
+                      <div className="text-xl font-black text-slate-800 leading-none mb-1">{totalNutrition.energi_kal.toFixed(0)}</div>
+                      <div className="text-[10px] font-bold text-orange-600 uppercase tracking-wider">Total kal</div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Quick Action Buttons */}
+              <div className="flex gap-2.5">
+                <button 
+                  onClick={() => { setDetectionItems([]); setAnalysisId(null); setPreviewUrl(null); setSelectedFile(null); setError(null); resetInlineStates(); }}
+                  disabled={isBusyAction} 
+                  className={`flex-1 font-bold py-2.5 px-3 rounded-xl flex items-center justify-center gap-2 transition-all text-sm active:scale-95 border-2 ${detectionItems.length === 0 ? 'bg-amber-500 hover:bg-amber-600 text-white border-amber-500 shadow-sm shadow-amber-200' : 'bg-white hover:bg-slate-50 text-slate-600 border-slate-200'}`}
+                >
+                  <Camera size={16} /> Foto Ulang
+                </button>
+                <button 
+                  onClick={handleOpenAddFood}
+                  disabled={isBusyAction || addingFoodIndex !== null} 
+                  className="flex-1 bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-2.5 px-3 rounded-xl flex items-center justify-center gap-2 transition-all text-sm active:scale-95 shadow-sm shadow-emerald-200 border-2 border-emerald-500 disabled:opacity-50"
+                >
+                  <Plus size={16} /> Tambah Makanan
+                </button>
+              </div>
+
+              {/* Timestamp */}
+              <div className="mt-4 pt-3 border-t border-slate-100 flex items-center gap-2 text-[10px] font-bold text-slate-400 uppercase">
+                <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                Terdeteksi pada: {new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
+              </div>
             </div>
+
 
             </div>
             {/* === AKHIR KOLOM KIRI === */}
