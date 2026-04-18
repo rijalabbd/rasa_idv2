@@ -67,7 +67,7 @@ def _show_summary(result: dict, ref_id: str | None):
     c3.metric("Dilewati", result.get("skipped_count", 0))
     c4.metric("Error", result.get("errors_count", 0))
 
-    c5, c6, c7, c8 = st.columns(4)
+    c5, c6, c7 = st.columns(3)
     if dry_run:
         c5.metric("Baru (akan ditambahkan)", result.get("new_count", 0))
         c6.metric("Sudah Ada (akan diperbarui)", result.get("existing_count", 0))
@@ -75,10 +75,6 @@ def _show_summary(result: dict, ref_id: str | None):
         c5.metric("Ditambahkan", result.get("inserted_count", 0))
         c6.metric("Diperbarui", result.get("updated_count", 0))
     c7.metric("Peringatan", result.get("warnings_count", 0))
-    if dry_run:
-        c8.metric("Sudah Ada di DB", result.get("existing_count", 0))
-    else:
-        c8.metric("Baru (ditambahkan)", result.get("new_count", 0))
 
 
 def _show_issues(result: dict, kind: str):

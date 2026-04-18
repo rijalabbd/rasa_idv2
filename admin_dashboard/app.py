@@ -176,18 +176,26 @@ with st.sidebar:
         unsafe_allow_html=True,
     )
 
-    # Page navigation
+    # Page navigation with icons
     _nav_icons = {
         "Dashboard":         "activity",
         "Pencocokan":        "link",
         "Import TKPI":       "database",
         "Ekspor Dataset":    "package",
     }
+
+    _nav_emoji = {
+        "Dashboard":       "📊",
+        "Pencocokan":      "🔗",
+        "Import TKPI":     "📂",
+        "Ekspor Dataset":  "📦",
+    }
+
     selected_page = st.radio(
         "Go to",
         list(_nav_icons.keys()),
         label_visibility="collapsed",
-        format_func=lambda p: p,
+        format_func=lambda p: f"{_nav_emoji.get(p, '')} {p}",
     )
 
     st.divider()
@@ -212,13 +220,13 @@ with st.sidebar:
             unsafe_allow_html=True,
         )
 
-    # Request Debugger
-    with st.expander("Debug Request"):
-        st.markdown(
-            icon_md("search", "Request Terakhir", size=13),
-            unsafe_allow_html=True,
-        )
-        if st.session_state.last_request_info:
+    # Request Debugger — hanya tampilkan jika sudah ada request
+    if st.session_state.last_request_info:
+        with st.expander("Debug Request"):
+            st.markdown(
+                icon_md("search", "Request Terakhir", size=13),
+                unsafe_allow_html=True,
+            )
             info = st.session_state.last_request_info
             st.markdown(f"**Method**: `{info['method']}`")
             st.markdown(f"**URL**: `{info['url']}`")
@@ -227,8 +235,6 @@ with st.sidebar:
             if req_id:
                 st.code(req_id, language=None)
                 st.caption("Request ID (Header)")
-        else:
-            st.caption("Belum ada request.")
 
 
 # =============================================================================
@@ -246,4 +252,4 @@ elif selected_page == "Ekspor Dataset":
 
 # Footer
 st.divider()
-st.caption("RASA-ID Admin Dashboard")
+st.caption("RASA-ID Admin Dashboard · v1.0")

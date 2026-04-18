@@ -1,3 +1,4 @@
+import pandas as pd
 import streamlit as st
 from utils.api import api_request, format_datetime
 from utils.icons import h1, h2, labeled_section, icon_md
@@ -120,8 +121,10 @@ def render_dashboard():
 
     st.markdown(h2("bar-chart-2", "Statistik Ringkasan"), unsafe_allow_html=True)
 
-    if st.button("Muat Ulang", key="refresh_summary_btn"):
+    if st.button("🔄 Muat Ulang Semua", key="refresh_all_btn"):
         fetch_summary()
+        fetch_model_status()
+        fetch_model_classes()
         st.rerun()
 
     col1, col2, col3, col4, col5 = st.columns(5)
@@ -178,7 +181,7 @@ def render_dashboard():
     with model_col1:
         st.markdown(labeled_section("monitor", "Status Model Aktif"), unsafe_allow_html=True)
 
-        if st.button("Muat Ulang", key="refresh_model_btn"):
+        if st.button("Muat Ulang Status", key="refresh_model_btn"):
             fetch_model_status()
             st.rerun()
 
@@ -241,7 +244,7 @@ def render_dashboard():
     with col_classes_1:
         st.markdown("Daftar kelas yang tersedia di model YOLO aktif.")
     with col_classes_2:
-        if st.button("Muat Ulang", key="refresh_classes_btn"):
+        if st.button("Muat Ulang Kelas", key="refresh_classes_btn"):
             fetch_model_classes()
             st.rerun()
 
@@ -253,7 +256,6 @@ def render_dashboard():
         classes = getattr(st.session_state, "model_classes", [])
         if classes:
             # Format list of dicts into a clean display
-            import pandas as pd
             df = pd.DataFrame(classes)
             if 'id' in df.columns and 'name' in df.columns:
                 df = df[['id', 'name']]

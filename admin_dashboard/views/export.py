@@ -159,11 +159,11 @@ def render_export():
 
     # ── Section 2: YOLO Feedback Dataset ─────────────────────────────────
     fb_sum = summary.get("feedback", {})
-    fb_label = f"Feedback Baru: {fb_sum.get('new', 0)} / Total: {fb_sum.get('total', 0)}"
-    st.markdown(h2("tag", f"Dataset Feedback YOLO"), unsafe_allow_html=True)
-    st.info(fb_label)
-    if fb_sum.get("last_exported_at"):
-        st.caption(f"Export Terakhir: {fb_sum.get('last_exported_at')}")
+    st.markdown(h2("tag", "Dataset Feedback YOLO"), unsafe_allow_html=True)
+    fb_m1, fb_m2, fb_m3 = st.columns(3)
+    fb_m1.metric("Total", fb_sum.get('total', 0))
+    fb_m2.metric("Belum Diekspor", fb_sum.get('new', 0), delta=f"{fb_sum.get('new', 0)} baru" if fb_sum.get('new', 0) > 0 else None)
+    fb_m3.metric("Ekspor Terakhir", fb_sum.get('last_exported_at', 'Belum pernah')[:10] if fb_sum.get('last_exported_at') else 'Belum pernah')
 
     fb_t1, fb_t2 = st.columns([1, 1])
     with fb_t1:
@@ -201,11 +201,11 @@ def render_export():
 
     # ── Section 3: YOLO Class Request Dataset ────────────────────────────
     cr_sum = summary.get("class_request", {})
-    cr_label = f"Class Request Baru: {cr_sum.get('new', 0)} / Total: {cr_sum.get('total', 0)}"
     st.markdown(h2("tag", "Dataset Class Request YOLO"), unsafe_allow_html=True)
-    st.info(cr_label)
-    if cr_sum.get("last_exported_at"):
-        st.caption(f"Export Terakhir: {cr_sum.get('last_exported_at')}")
+    cr_m1, cr_m2, cr_m3 = st.columns(3)
+    cr_m1.metric("Total", cr_sum.get('total', 0))
+    cr_m2.metric("Belum Diekspor", cr_sum.get('new', 0), delta=f"{cr_sum.get('new', 0)} baru" if cr_sum.get('new', 0) > 0 else None)
+    cr_m3.metric("Ekspor Terakhir", cr_sum.get('last_exported_at', 'Belum pernah')[:10] if cr_sum.get('last_exported_at') else 'Belum pernah')
 
     cr_t1, cr_t2 = st.columns([1, 1])
     with cr_t1:
@@ -243,11 +243,11 @@ def render_export():
 
     # ── Section 4: YOLO Missed Detections Dataset ────────────────────────
     md_sum = summary.get("missed_detection", {})
-    md_label = f"Missed Detection Baru: {md_sum.get('new', 0)} / Total: {md_sum.get('total', 0)}"
     st.markdown(h2("eye", "Dataset Missed Detection YOLO"), unsafe_allow_html=True)
-    st.info(md_label)
-    if md_sum.get("last_exported_at"):
-        st.caption(f"Export Terakhir: {md_sum.get('last_exported_at')}")
+    md_m1, md_m2, md_m3 = st.columns(3)
+    md_m1.metric("Total", md_sum.get('total', 0))
+    md_m2.metric("Belum Diekspor", md_sum.get('new', 0), delta=f"{md_sum.get('new', 0)} baru" if md_sum.get('new', 0) > 0 else None)
+    md_m3.metric("Ekspor Terakhir", md_sum.get('last_exported_at', 'Belum pernah')[:10] if md_sum.get('last_exported_at') else 'Belum pernah')
 
     md_t1, md_t2 = st.columns([1, 1])
     with md_t1:
