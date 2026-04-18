@@ -464,6 +464,8 @@ export default function AnalyzePhoto() {
               width: 100% !important; 
               position: static !important; 
               top: auto !important;
+              max-height: none !important;
+              overflow: visible !important;
             }
 
             /* Ranking card header: wrap on small screens */
@@ -496,6 +498,10 @@ export default function AnalyzePhoto() {
             .detection-card { padding: 12px !important; }
             .summary-count { font-size: 1.75rem !important; }
           }
+
+          /* Hidden scrollbar for left sticky col */
+          .left-col-scroll::-webkit-scrollbar { display: none; }
+          .left-col-scroll { -ms-overflow-style: none; scrollbar-width: none; }
         `}</style>
 
 
@@ -602,7 +608,7 @@ export default function AnalyzePhoto() {
           <div className="results-layout flex flex-col lg:flex-row gap-6 lg:gap-8 items-start">
             
             {/* === KOLOM KIRI: Foto & Ringkasan (Sticky) === */}
-            <div className="left-col w-full lg:w-[400px] xl:w-[450px] shrink-0 lg:sticky lg:top-28 space-y-6 animate-slide-up-fade opacity-0" style={{ animationDelay: '0ms' }}>
+            <div className="left-col left-col-scroll w-full lg:w-[400px] xl:w-[450px] shrink-0 lg:sticky lg:top-4 lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto space-y-6 animate-slide-up-fade opacity-0" style={{ animationDelay: '0ms' }}>
 
             {/* Detection Summary Card — Balanced White Card */}
             <div data-tour="summary-card" className={`bg-white rounded-[24px] p-5 sm:p-6 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] border border-slate-100 transition-all duration-500 ${detectionItems.length === 0 ? 'bg-[#FFFBEB] border-amber-200' : ''}`}>
