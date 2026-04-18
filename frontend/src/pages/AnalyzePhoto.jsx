@@ -1288,11 +1288,16 @@ export default function AnalyzePhoto() {
             {addingFoodIndex === 'standalone' && detectionItems.length > 0 && (
               <div id="add-food-panel" data-tour="add-food-form" className="bg-white border-2 border-emerald-400 rounded-[20px] p-5 shadow-emerald-100/50 shadow-lg mt-6 relative overflow-hidden">
                 <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-emerald-400 to-teal-400" />
-                <div className="flex justify-between items-center mb-4 mt-1">
-                  <h3 className="font-extrabold text-slate-800 text-sm flex items-center gap-2">
-                    <Search size={16} className="text-emerald-500" /> Cari Makanan di Database
-                  </h3>
-                  <button onClick={handleCancelAddFood} className="text-slate-400 hover:text-slate-600 p-1 bg-slate-50 rounded-full transition-colors">
+                <div className="flex justify-between items-start mb-5 mt-1">
+                  <div>
+                    <h3 className="font-extrabold text-slate-800 text-base flex items-center gap-2 mb-1.5">
+                      <Search size={18} className="text-emerald-500" /> Tambah Makanan Manual
+                    </h3>
+                    <p className="text-xs text-slate-500 font-medium leading-relaxed pr-4">
+                      Gunakan pencarian ini untuk menambahkan informasi gizi makanan jika tidak terdeteksi otomatis oleh AI di dalam foto Anda.
+                    </p>
+                  </div>
+                  <button onClick={handleCancelAddFood} className="mt-0.5 shrink-0 text-slate-400 hover:text-slate-600 p-2 bg-slate-50 hover:bg-slate-100 rounded-full transition-colors shadow-sm border border-slate-100">
                     <X size={16} strokeWidth={3} />
                   </button>
                 </div>
@@ -1357,15 +1362,17 @@ export default function AnalyzePhoto() {
                 </div>
 
                 {!showTrainingRequest && (
-                  <div className="mt-5 pt-4 border-t border-slate-100 flex justify-between items-center text-xs font-semibold text-slate-500">
-                    <span>Makanan tidak ditemukan?</span>
+                  <div className="mt-5 pt-4 border-t border-slate-100 flex items-center justify-between">
+                    <span className="text-[11px] font-semibold text-slate-500">
+                      Bukan yang Anda cari?
+                    </span>
                     <button 
                       data-tour="request-link"
                       onClick={handleOpenTrainingRequest} 
                       disabled={isBusyAction} 
-                      className="text-orange-500 hover:text-orange-600 font-bold"
+                      className="text-[11px] font-bold text-orange-500 hover:text-orange-600 flex items-center gap-1 transition-colors"
                     >
-                      Ajukan Kelas Baru
+                      Laporkan sebagai makanan baru
                     </button>
                   </div>
                 )}
@@ -1377,15 +1384,15 @@ export default function AnalyzePhoto() {
               <div data-tour="request-class" className="bg-orange-50 border-2 border-orange-200 rounded-[20px] p-5 shadow-sm mt-4">
                 <div className="flex justify-between items-center mb-3">
                   <h3 className="font-extrabold text-orange-800 text-sm flex items-center gap-2">
-                    <Database size={16} /> Ajukan Kelas Makanan Baru
+                    <Database size={16} /> Laporkan Makanan Baru
                   </h3>
                   <button onClick={handleCancelTrainingRequest} className="text-orange-400 hover:text-orange-600 p-1 transition-colors">
                     <X size={16} strokeWidth={3} />
                   </button>
                 </div>
                 
-                <p className="text-xs font-medium text-orange-700 mb-4 bg-orange-100/50 p-3 rounded-xl">
-                  Bantu kami menambah database! Makanan yang diusulkan akan dilatih agar dikenali otomatis di masa depan.
+                <p className="text-xs font-medium text-orange-700/80 mb-4 bg-white/50 p-3 rounded-xl border border-orange-100">
+                  Makanan yang Anda cari belum ada di daftar kami? Masukkan nama dan deskripsi singkatnya di sini agar dapat kami tambahkan ke database gizi di masa mendatang.
                 </p>
                 
                 <input 
