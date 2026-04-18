@@ -38,7 +38,7 @@ def _check_password(input_password: str) -> bool:
     Bandingkan password yang diinput dengan DASHBOARD_PASSWORD di env.
     Pakai perbandingan hash agar aman dari timing attack.
     """
-    correct = os.environ.get("DASHBOARD_PASSWORD", "")
+    correct = os.environ.get("DASHBOARD_PASSWORD", "").replace('"', '').replace("'", "").strip()
     if not correct:
         st.error(
             "⚠️ **`DASHBOARD_PASSWORD` belum di-set di server.** "
