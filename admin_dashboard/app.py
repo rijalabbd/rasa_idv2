@@ -16,7 +16,7 @@ from views.export import render_export
 from views.tkpi_import import render_tkpi_import
 import extra_streamlit_components as stx
 
-@st.cache_resource(experimental_allow_widgets=True)
+@st.cache_resource
 def get_cookie_manager():
     return stx.CookieManager()
 
