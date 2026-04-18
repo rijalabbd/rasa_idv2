@@ -106,66 +106,40 @@ if not st.session_state["authenticated"]:
         st.stop()  # Hentikan eksekusi — konten dashboard tidak akan dirender
 
 # =============================================================================
-# Session State Initialization
+# Session State Initialization (compact)
 # =============================================================================
 
-if "summary_data" not in st.session_state:
-    st.session_state.summary_data = None
-if "summary_error" not in st.session_state:
-    st.session_state.summary_error = None
+_SESSION_DEFAULTS = {
+    # Dashboard
+    "summary_data": None, "summary_error": None,
+    "model_status": None, "model_status_error": None,
+    "upload_message": None, "upload_error": None,
+    # Export
+    "export_zip_bytes": None, "export_filename": None,
+    "export_message": None, "export_error": None,
+    "export_file_list": [],
+    "yolo_feedback_zip": None, "yolo_feedback_msg": None,
+    "yolo_feedback_err": None, "yolo_feedback_files": [],
+    "yolo_class-requests_zip": None, "yolo_class-requests_msg": None,
+    "yolo_class-requests_err": None, "yolo_class-requests_files": [],
+    "yolo_missed_zip": None, "yolo_missed_msg": None,
+    "yolo_missed_err": None, "yolo_missed_files": [],
+    # Sidebar / debug
+    "ping_message": None, "ping_error": None,
+    "last_request_info": None, "last_request_id": None,
+    # Mappings
+    "mapping_list": None, "mapping_list_error": None,
+    "mapping_save_message": None, "mapping_save_error": None,
+    "tkpi_search_results": [],
+    # TKPI Import
+    "tkpi_import_result": None, "tkpi_import_ref": None,
+    "tkpi_commit_result": None, "tkpi_commit_ref": None,
+    "tkpi_validated_hash": None, "tkpi_preview_data": None,
+}
 
-if "export_zip_bytes" not in st.session_state:
-    st.session_state.export_zip_bytes = None
-if "export_filename" not in st.session_state:
-    st.session_state.export_filename = None
-if "export_message" not in st.session_state:
-    st.session_state.export_message = None
-if "export_error" not in st.session_state:
-    st.session_state.export_error = None
-if "export_file_list" not in st.session_state:
-    st.session_state.export_file_list = []
-
-for key in ("yolo_feedback_zip", "yolo_feedback_msg", "yolo_feedback_err", "yolo_feedback_files"):
-    if key not in st.session_state:
-        st.session_state[key] = [] if key.endswith("_files") else None
-
-for key in ("yolo_class-requests_zip", "yolo_class-requests_msg", "yolo_class-requests_err", "yolo_class-requests_files"):
-    if key not in st.session_state:
-        st.session_state[key] = [] if key.endswith("_files") else None
-
-if "model_status" not in st.session_state:
-    st.session_state.model_status = None
-if "model_status_error" not in st.session_state:
-    st.session_state.model_status_error = None
-if "upload_message" not in st.session_state:
-    st.session_state.upload_message = None
-if "upload_error" not in st.session_state:
-    st.session_state.upload_error = None
-
-if "ping_message" not in st.session_state:
-    st.session_state.ping_message = None
-if "ping_error" not in st.session_state:
-    st.session_state.ping_error = None
-
-if "last_request_info" not in st.session_state:
-    st.session_state.last_request_info = None
-if "last_request_id" not in st.session_state:
-    st.session_state.last_request_id = None
-
-if "mapping_list" not in st.session_state:
-    st.session_state.mapping_list = None
-if "mapping_list_error" not in st.session_state:
-    st.session_state.mapping_list_error = None
-if "mapping_save_message" not in st.session_state:
-    st.session_state.mapping_save_message = None
-if "mapping_save_error" not in st.session_state:
-    st.session_state.mapping_save_error = None
-if "tkpi_search_results" not in st.session_state:
-    st.session_state.tkpi_search_results = []
-
-for key in ("tkpi_import_result", "tkpi_import_ref", "tkpi_commit_result", "tkpi_commit_ref", "tkpi_validated_hash", "tkpi_preview_data"):
-    if key not in st.session_state:
-        st.session_state[key] = None
+for _k, _v in _SESSION_DEFAULTS.items():
+    if _k not in st.session_state:
+        st.session_state[_k] = _v
 
 # =============================================================================
 # Sidebar

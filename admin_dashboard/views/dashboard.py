@@ -39,14 +39,6 @@ def fetch_model_status():
     else:
         st.session_state.model_status = None
         st.session_state.model_status_error = f"HTTP {status}" if status > 0 else "Request failed"
-    """Fetch model status and store in session_state."""
-    data, status, _, _ = api_request("GET", "/admin/model/status")
-    if status == 200 and data:
-        st.session_state.model_status = data
-        st.session_state.model_status_error = None
-    else:
-        st.session_state.model_status = None
-        st.session_state.model_status_error = f"HTTP {status}" if status > 0 else "Request failed"
 
 
 def _fmt_size(b: int | None) -> str:

@@ -158,12 +158,12 @@ def _render_list_tab():
     st.caption(f"Menampilkan {len(items)} mapping")
 
     # --- Header row ---
-    h1, h2, h3, h4, h5 = st.columns([2, 3, 1.5, 2.5, 1.5])
-    h1.markdown("**Label YOLO**")
-    h2.markdown("**Nama TKPI**")
-    h3.markdown("**Status**")
-    h4.markdown("**Terakhir Diperbarui**")
-    h5.markdown("**Aksi**")
+    col_h1, col_h2, col_h3, col_h4, col_h5 = st.columns([2, 3, 1.5, 2.5, 1.5])
+    col_h1.markdown("**Label YOLO**")
+    col_h2.markdown("**Nama TKPI**")
+    col_h3.markdown("**Status**")
+    col_h4.markdown("**Terakhir Diperbarui**")
+    col_h5.markdown("**Aksi**")
     st.divider()
 
     # --- Data rows ---
