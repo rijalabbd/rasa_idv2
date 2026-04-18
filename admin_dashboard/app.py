@@ -176,26 +176,19 @@ with st.sidebar:
         unsafe_allow_html=True,
     )
 
-    # Page navigation with icons
-    _nav_icons = {
-        "Dashboard":         "activity",
-        "Pencocokan":        "link",
-        "Import TKPI":       "database",
-        "Ekspor Dataset":    "package",
-    }
-
-    _nav_emoji = {
-        "Dashboard":       "📊",
-        "Pencocokan":      "🔗",
-        "Import TKPI":     "📂",
-        "Ekspor Dataset":  "📦",
+    # Page navigation with Material Icons
+    _nav_items = {
+        "Dashboard":       ":material/dashboard:",
+        "Pencocokan":      ":material/link:",
+        "Import TKPI":     ":material/database:",
+        "Ekspor Dataset":  ":material/download:",
     }
 
     selected_page = st.radio(
         "Go to",
-        list(_nav_icons.keys()),
+        list(_nav_items.keys()),
         label_visibility="collapsed",
-        format_func=lambda p: f"{_nav_emoji.get(p, '')} {p}",
+        format_func=lambda p: f"{_nav_items.get(p, '')} {p}",
     )
 
     st.divider()
