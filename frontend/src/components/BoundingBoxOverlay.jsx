@@ -1,7 +1,7 @@
 // BoundingBoxOverlay.jsx
 // Draws bounding boxes with labels and confidence on top of the uploaded image.
 
-import { useRef, useEffect, useState } from 'react';
+import { useRef, useEffect, useState, useMemo } from 'react';
 
 // Color palette for different classes (vibrant, high contrast)
 const CLASS_COLORS = [
@@ -29,7 +29,7 @@ export default function BoundingBoxOverlay({ imageUrl, detections }) {
   const [imgLoaded, setImgLoaded] = useState(false);
 
   // Unique labels for consistent coloring
-  const uniqueLabels = [...new Set((detections || []).map(d => d.label))];
+  const uniqueLabels = useMemo(() => [...new Set((detections || []).map(d => d.label))], [detections]);
 
   useEffect(() => {
     if (!imgLoaded || !canvasRef.current || !imgRef.current) return;
