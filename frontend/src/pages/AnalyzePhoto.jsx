@@ -834,8 +834,7 @@ export default function AnalyzePhoto() {
                         value={smartSearch.query} 
                         onChange={e => { smartSearch.handleSearch(e.target.value); setRequestedLabelInput(e.target.value); }}
                         placeholder="Ketik nama makanan (contoh: Stroberi, Gudeg, Papeda)..."
-                        className="w-full pl-10 pr-10 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 outline-none transition-all shadow-inner" 
-                        autoFocus
+                        className="w-full pl-10 pr-10 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 outline-none transition-all shadow-inner"
                       />
                       {(smartSearch.isSearching || smartSearchLoading) && <div className="absolute right-3 top-3"><Spinner size="sm" /></div>}
                     </div>
@@ -1163,8 +1162,7 @@ export default function AnalyzePhoto() {
                                 value={editSearch.query} 
                                 onChange={e => editSearch.handleSearch(e.target.value)}
                                 onFocus={(e) => { setTimeout(() => e.target.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300); }}
-                                className="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-300 rounded-xl text-sm font-medium focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none transition-all shadow-sm" 
-                                autoFocus
+                                className="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-300 rounded-xl text-sm font-medium focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none transition-all shadow-sm"
                               />
                               {editSearch.isSearching && <div className="absolute right-3 top-3"><Spinner size="sm" /></div>}
                               
@@ -1310,7 +1308,7 @@ export default function AnalyzePhoto() {
                     onFocus={(e) => { setTimeout(() => e.target.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300); }}
                     placeholder="Contoh: Nasi Goreng Spesial..."
                     className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 outline-none transition-all shadow-inner" 
-                    autoFocus 
+
                   />
                   {addSearch.isSearching && <div className="absolute right-3 top-3.5"><Spinner size="sm" /></div>}
                   
