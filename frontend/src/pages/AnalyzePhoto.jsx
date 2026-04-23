@@ -3,7 +3,8 @@ import { useState, useRef, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   Camera, Image as ImageIcon, Search, Edit, Trash2, Home, X, Plus, 
-  CheckCircle2, BarChart2, Check, Flame, Utensils, Database, ChevronDown, ChevronUp, AlertCircle, AlertTriangle, Sun, Focus, Crop, Layers, Target, Tag, TrendingUp, Info, Send
+  CheckCircle2, BarChart2, Check, Flame, Utensils, Database, ChevronDown, ChevronUp, AlertCircle, AlertTriangle, Sun, Focus, Crop, Layers, Target, Tag, TrendingUp, Info, Send,
+  ShieldCheck, ShieldAlert, Zap, Wheat, Droplets, Leaf
 } from 'lucide-react';
 
 import BoundingBoxOverlay from '../components/BoundingBoxOverlay';
@@ -362,9 +363,72 @@ export default function AnalyzePhoto() {
   // â”€â”€ Derived State â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const calorieRanked = useMemo(() => {
     const selected = detectionItems.filter(it => it.selected && it.baseNutrition);
-    const withCal = selected.map(it => ({ name: it.currentName, kal: Math.round((it.baseNutrition.energi_kal || 0) * (it.portion || 1)) }));
+    // Use YOLO detection label (with underscores replaced by spaces) for display name
+    const withCal = selected.map(it => {
+      const yoloName = (it.label && it.label !== 'manual') 
+        ? it.label.replace(/_/g, ' ') 
+        : it.currentName;
+      return { name: yoloName, kal: Math.round((it.baseNutrition.energi_kal || 0) * (it.portion || 1)) };
+    });
     return withCal.sort((a, b) => b.kal - a.kal);
   }, [detectionItems]);
+
+  // Nutrition assessment against Indonesian AKG (Angka Kecukupan Gizi)
+  // Reference: AKG 2019 for adults (average male/female 19-29 tahun)
+  const nutritionAssessment = useMemo(() => {
+    if (!totalNutrition) return null;
+    
+    // AKG daily reference values (per meal ~ 33% of daily)
+    const perMealRef = {
+      energi_kal: 700,  // ~2100 daily / 3
+      protein_g: 20,    // ~60g daily / 3
+      lemak_g: 23,      // ~70g daily / 3
+      karbo_g: 108,     // ~325g daily / 3
+      serat_g: 8,       // ~25g daily / 3
+    };
+    
+    const getLevel = (val, ref) => {
+      const pct = (val / ref) * 100;
+      if (pct < 50) return { status: 'kurang', color: 'amber', pct: Math.round(pct) };
+      if (pct <= 120) return { status: 'cukup', color: 'emerald', pct: Math.round(pct) };
+      return { status: 'berlebih', color: 'red', pct: Math.round(pct) };
+    };
+    
+    const energi = getLevel(totalNutrition.energi_kal, perMealRef.energi_kal);
+    const protein = getLevel(totalNutrition.protein_g, perMealRef.protein_g);
+    const lemak = getLevel(totalNutrition.lemak_g, perMealRef.lemak_g);
+    const karbo = getLevel(totalNutrition.karbo_g, perMealRef.karbo_g);
+    const serat = getLevel(totalNutrition.serat_g || 0, perMealRef.serat_g);
+    
+    // Overall score: count how many are "cukup"
+    const nutrients = [energi, protein, lemak, karbo];
+    const cukupCount = nutrients.filter(n => n.status === 'cukup').length;
+    const berlebihCount = nutrients.filter(n => n.status === 'berlebih').length;
+    
+    let overallStatus, overallMessage, overallColor, overallIcon;
+    if (cukupCount >= 3 && berlebihCount === 0) {
+      overallStatus = 'Seimbang';
+      overallMessage = 'Komposisi gizi makanan Anda sudah baik dan seimbang untuk satu kali makan.';
+      overallColor = 'emerald';
+      overallIcon = 'shield-check';
+    } else if (berlebihCount >= 2) {
+      overallStatus = 'Berlebih';
+      overallMessage = 'Beberapa nutrisi melebihi kebutuhan per porsi makan. Pertimbangkan untuk mengurangi porsi.';
+      overallColor = 'red';
+      overallIcon = 'shield-alert';
+    } else {
+      overallStatus = 'Perlu Perhatian';
+      overallMessage = 'Sebagian nutrisi belum mencukupi kebutuhan per porsi makan. Tambahkan variasi makanan.';
+      overallColor = 'amber';
+      overallIcon = 'shield-alert';
+    }
+    
+    return {
+      energi, protein, lemak, karbo, serat,
+      overallStatus, overallMessage, overallColor, overallIcon,
+      perMealRef
+    };
+  }, [totalNutrition]);
 
   const avgConf = useMemo(() => {
     const auto = detectionItems.filter(it => !it.is_manual && typeof it.confidence === 'number');
@@ -761,6 +825,101 @@ export default function AnalyzePhoto() {
                   <NutriTile colorVariant="yellow" label="Lemak" value={totalNutrition.lemak_g.toFixed(1)} unit="g" />
                   <NutriTile colorVariant="green" label="Karbo" value={totalNutrition.karbo_g.toFixed(1)} unit="g" />
                 </div>
+
+                {/* === Nutrition Assessment Panel === */}
+                {nutritionAssessment && (
+                  <div className="mt-6 pt-5 border-t border-slate-100">
+                    {/* Overall Status Header */}
+                    <div className={`flex items-center gap-3 p-4 rounded-2xl mb-4 border ${
+                      nutritionAssessment.overallColor === 'emerald' 
+                        ? 'bg-emerald-50/80 border-emerald-200' 
+                        : nutritionAssessment.overallColor === 'red'
+                        ? 'bg-red-50/80 border-red-200'
+                        : 'bg-amber-50/80 border-amber-200'
+                    }`}>
+                      <div className={`shrink-0 p-2 rounded-xl ${
+                        nutritionAssessment.overallColor === 'emerald' ? 'bg-emerald-100' 
+                        : nutritionAssessment.overallColor === 'red' ? 'bg-red-100'
+                        : 'bg-amber-100'
+                      }`}>
+                        {nutritionAssessment.overallIcon === 'shield-check' 
+                          ? <ShieldCheck size={22} className="text-emerald-600" />
+                          : <ShieldAlert size={22} className={nutritionAssessment.overallColor === 'red' ? 'text-red-600' : 'text-amber-600'} />
+                        }
+                      </div>
+                      <div className="min-w-0">
+                        <div className={`font-extrabold text-sm ${
+                          nutritionAssessment.overallColor === 'emerald' ? 'text-emerald-800'
+                          : nutritionAssessment.overallColor === 'red' ? 'text-red-800'
+                          : 'text-amber-800'
+                        }`}>
+                          Gizi {nutritionAssessment.overallStatus}
+                        </div>
+                        <div className={`text-xs font-medium leading-snug mt-0.5 ${
+                          nutritionAssessment.overallColor === 'emerald' ? 'text-emerald-700/80'
+                          : nutritionAssessment.overallColor === 'red' ? 'text-red-700/80'
+                          : 'text-amber-700/80'
+                        }`}>
+                          {nutritionAssessment.overallMessage}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Nutrient Detail Bars */}
+                    <div className="space-y-3">
+                      <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                        <Info size={12} className="text-slate-400" />
+                        Pemenuhan Gizi Per Porsi Makan (AKG)
+                      </div>
+                      {[
+                        { key: 'energi', label: 'Kalori', icon: Zap, data: nutritionAssessment.energi, value: `${totalNutrition.energi_kal.toFixed(0)} kal`, ref: `${nutritionAssessment.perMealRef.energi_kal} kal` },
+                        { key: 'protein', label: 'Protein', icon: Droplets, data: nutritionAssessment.protein, value: `${totalNutrition.protein_g.toFixed(1)}g`, ref: `${nutritionAssessment.perMealRef.protein_g}g` },
+                        { key: 'lemak', label: 'Lemak', icon: Flame, data: nutritionAssessment.lemak, value: `${totalNutrition.lemak_g.toFixed(1)}g`, ref: `${nutritionAssessment.perMealRef.lemak_g}g` },
+                        { key: 'karbo', label: 'Karbohidrat', icon: Wheat, data: nutritionAssessment.karbo, value: `${totalNutrition.karbo_g.toFixed(1)}g`, ref: `${nutritionAssessment.perMealRef.karbo_g}g` },
+                        { key: 'serat', label: 'Serat', icon: Leaf, data: nutritionAssessment.serat, value: `${(totalNutrition.serat_g || 0).toFixed(1)}g`, ref: `${nutritionAssessment.perMealRef.serat_g}g` },
+                      ].map(nutrient => {
+                        const statusColors = {
+                          kurang: { bg: 'bg-amber-500', text: 'text-amber-700', bgLight: 'bg-amber-50', border: 'border-amber-200' },
+                          cukup: { bg: 'bg-emerald-500', text: 'text-emerald-700', bgLight: 'bg-emerald-50', border: 'border-emerald-200' },
+                          berlebih: { bg: 'bg-red-500', text: 'text-red-700', bgLight: 'bg-red-50', border: 'border-red-200' },
+                        };
+                        const colors = statusColors[nutrient.data.status];
+                        const barWidth = Math.min(nutrient.data.pct, 150); // Cap visual at 150%
+                        
+                        return (
+                          <div key={nutrient.key} className="group">
+                            <div className="flex items-center justify-between mb-1.5">
+                              <div className="flex items-center gap-2">
+                                <nutrient.icon size={14} className={colors.text} />
+                                <span className="text-xs font-bold text-slate-700">{nutrient.label}</span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <span className="text-[11px] font-semibold text-slate-500">{nutrient.value} / {nutrient.ref}</span>
+                                <span className={`text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-md border ${colors.bgLight} ${colors.text} ${colors.border}`}>
+                                  {nutrient.data.pct}%
+                                </span>
+                              </div>
+                            </div>
+                            <div className="bg-slate-100/80 rounded-full h-2 overflow-hidden ring-1 ring-inset ring-slate-200/50">
+                              <div 
+                                className={`h-full rounded-full ${colors.bg} transition-all duration-1000 ease-out`} 
+                                style={{ width: isMounted ? `${(barWidth / 150) * 100}%` : '0%' }} 
+                              />
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    {/* Reference note */}
+                    <div className="mt-4 bg-slate-50 border border-slate-200/60 rounded-xl p-3 flex items-start gap-2">
+                      <Info size={14} className="shrink-0 mt-0.5 text-slate-400" />
+                      <span className="text-[11px] font-medium text-slate-500 leading-snug">
+                        Berdasarkan AKG 2019 untuk dewasa (19-29 tahun). Kebutuhan per porsi makan dihitung ~33% dari kebutuhan harian. Angka dapat berbeda tergantung usia, jenis kelamin, dan aktivitas fisik.
+                      </span>
+                    </div>
+                  </div>
+                )}
 
                 {/* Timestamp */}
                 <div className="mt-6 pt-4 border-t border-slate-100 flex items-center gap-2 text-[10px] font-bold text-slate-400 uppercase">
