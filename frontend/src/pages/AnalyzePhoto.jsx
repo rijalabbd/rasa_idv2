@@ -362,10 +362,13 @@ export default function AnalyzePhoto() {
   // â”€â”€ Derived State â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const calorieRanked = useMemo(() => {
     const selected = detectionItems.filter(it => it.selected && it.baseNutrition);
-    const withCal = selected.map(it => ({
-      name: it.currentName,
-      kal: Math.round((it.baseNutrition.energi_kal || 0) * (it.portion || 1))
-    }));
+    // Gunakan nama label YOLO (dengan underscore diganti spasi) agar tidak terlalu spesifik/ambigu
+    const withCal = selected.map(it => {
+      const yoloName = (it.label && it.label !== 'manual') 
+        ? it.label.replace(/_/g, ' ') 
+        : it.currentName;
+      return { name: yoloName, kal: Math.round((it.baseNutrition.energi_kal || 0) * (it.portion || 1)) };
+    });
     return withCal.sort((a, b) => b.kal - a.kal);
   }, [detectionItems]);
 
@@ -719,8 +722,8 @@ export default function AnalyzePhoto() {
                       <BarChart2 size={24} className="text-white" />
                     </div>
                     <div>
-                      <div className="font-extrabold text-slate-800 text-lg">Ranking Kalori</div>
-                      <div className="text-xs font-medium text-slate-400">Urutan tertinggi ke terendah</div>
+                      <div className="font-extrabold text-slate-800 text-lg">Total Kandungan Gizi</div>
+                      <div className="text-xs font-medium text-slate-400">Penyumbang kalori terbesar</div>
                     </div>
                   </div>
                   <div className="ranking-total text-right">
