@@ -9,6 +9,21 @@ from app.core.security import get_admin_api_key
 
 router = APIRouter()
 
+import io
+import asyncio
+from typing import Tuple
+
+def export_combined_data_threadsafe(only_new: bool) -> Tuple[bytes, str]:
+    """Threadsafe wrapper to run ZIP building in its own DB session."""
+    from app.db.session import SessionLocal
+    db = SessionLocal()
+    try:
+        zip_buffer, batch_id = build_combined_export_zip(db, only_new=only_new)
+        return zip_buffer.getvalue(), batch_id
+    finally:
+        db.close()
+
+
 @router.get("/export-zip")
 async def export_combined_data(
     request: Request,
@@ -24,7 +39,14 @@ async def export_combined_data(
     audit.log_action(f"ADMIN_EXPORT_COMBINED_MODE_{mode.upper()}", request, admin_key)
     
     only_new = (mode == "new")
-    zip_buffer, batch_id = build_combined_export_zip(db, only_new=only_new)
+    
+    loop = asyncio.get_running_loop()
+    zip_bytes, batch_id = await loop.run_in_executor(
+        None,
+        export_combined_data_threadsafe,
+        only_new
+    )
+    zip_buffer = io.BytesIO(zip_bytes)
     
     filename = f"rasa_id_export_{datetime.now().strftime('%Y%m%d_%H%M%S')}.zip"
     

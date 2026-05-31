@@ -23,11 +23,35 @@ from app.services.tkpi_import_service import import_csv_from_text
 from app.models.tkpi_food import TKPIFood
 from sqlalchemy import select, func
 
+import asyncio
+
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
 MAX_FILE_SIZE = 10 * 1024 * 1024  # 10 MB
+
+
+def import_tkpi_csv_threadsafe(csv_text: str, filename: str, dry_run: bool) -> dict:
+    """Threadsafe wrapper to run CSV import with its own DB session."""
+    from app.db.session import SessionLocal
+    db = SessionLocal()
+    try:
+        result = import_csv_from_text(
+            csv_text,
+            db,
+            filename=filename,
+            dry_run=dry_run,
+        )
+        return {
+            "result_dict": result.to_dict(),
+            "audit_meta": result.audit_meta()
+        }
+    except Exception:
+        db.rollback()
+        raise
+    finally:
+        db.close()
 
 
 @router.post("/tkpi/import-csv")
@@ -71,19 +95,22 @@ async def import_tkpi_csv(
         raise HTTPException(status_code=400, detail="File is not valid UTF-8")
 
     # ── Run import ───────────────────────────────────────────────────────
-    result = import_csv_from_text(
+    loop = asyncio.get_running_loop()
+    import_data = await loop.run_in_executor(
+        None,
+        import_tkpi_csv_threadsafe,
         csv_text,
-        db,
-        filename=file.filename,
-        dry_run=dry_run,
+        file.filename or "uploaded_file.csv",
+        dry_run
     )
+    result_dict = import_data["result_dict"]
+    audit_meta = import_data["audit_meta"]
 
     # ── Audit log ────────────────────────────────────────────────────────
-    meta = result.audit_meta()
-    meta["file_size"] = len(raw_bytes)
-    audit.log_action("TKPI_IMPORT_CSV", request, admin_key, meta=meta)
+    audit_meta["file_size"] = len(raw_bytes)
+    audit.log_action("TKPI_IMPORT_CSV", request, admin_key, meta=audit_meta)
 
-    return result.to_dict()
+    return result_dict
 
 
 @router.get("/tkpi/list")

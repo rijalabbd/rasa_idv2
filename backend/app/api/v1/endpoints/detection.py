@@ -11,6 +11,19 @@ from app.core.exceptions import AppException
 
 router = APIRouter()
 
+def process_detection_threadsafe(image_path: str, request_id: str) -> DetectionResponse:
+    """Threadsafe wrapper to run process_detection with its own DB session."""
+    from app.db.session import SessionLocal
+    db = SessionLocal()
+    try:
+        return process_detection(db, image_path, request_id)
+    except Exception:
+        db.rollback()
+        raise
+    finally:
+        db.close()
+
+
 # Current prefix in router.py is "/detect". So path="" becomes "/api/v1/detect"
 @router.post("", response_model=DetectionResponse, status_code=status.HTTP_200_OK)
 async def detect_food(
@@ -76,8 +89,7 @@ async def detect_food(
             result = await asyncio.wait_for(
                 loop.run_in_executor(
                     executor, 
-                    process_detection, 
-                    db, 
+                    process_detection_threadsafe, 
                     image_path,
                     request.state.request_id
                 ),

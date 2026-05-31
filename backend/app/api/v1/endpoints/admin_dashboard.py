@@ -75,7 +75,7 @@ async def upload_model(
     Upload and activate a new YOLO model.
 
     Performs atomic swap: write to active.pt.tmp then os.replace -> active.pt.
-    Validates extension (.pt) and size (1 MB – 200 MB).
+    Validates extension (.pt) and size (1 MB – 300 MB).
     """
     audit = AuditService(db)
     request_id = getattr(request.state, "request_id", "")
