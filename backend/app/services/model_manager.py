@@ -43,6 +43,7 @@ _state: Tuple[Optional[Any], dict] = (None, {
     "loaded_at": None,
     "ready": False,
 })
+_last_mtime: Optional[float] = None
 _reload_lock = threading.Lock()
 
 
@@ -70,6 +71,30 @@ def _active_path() -> Path:
     return MODELS_DIR / ACTIVE_MODEL_NAME
 
 
+def _reload_model(path: Path) -> None:
+    """Reload model from disk (helper for get_model/swap_model)."""
+    global _state, _last_mtime
+    logger.info(f"Reloading YOLO model from disk {path}...")
+    try:
+        model = YOLO(str(path))
+        sha256 = _compute_sha256(path)
+        size_bytes = path.stat().st_size
+        loaded_at = _now_iso()
+        mtime = path.stat().st_mtime
+
+        _state = (model, {
+            "active_model": ACTIVE_MODEL_NAME,
+            "sha256": sha256,
+            "size_bytes": size_bytes,
+            "loaded_at": loaded_at,
+            "ready": True,
+        })
+        _last_mtime = mtime
+        logger.info(f"✅ YOLO model reloaded successfully: sha256={sha256[:12]}… loaded_at={loaded_at}")
+    except Exception as e:
+        logger.error(f"Failed to reload model: {e}")
+
+
 # ---------------------------------------------------------------------------
 # Public API
 # ---------------------------------------------------------------------------
@@ -79,7 +104,7 @@ def load_initial() -> None:
 
     Called once from ``main.py`` startup event.
     """
-    global _state
+    global _state, _last_mtime
 
     path = _active_path()
     if not path.exists():
@@ -96,6 +121,7 @@ def load_initial() -> None:
     sha256 = _compute_sha256(path)
     size_bytes = path.stat().st_size
     loaded_at = _now_iso()
+    mtime = path.stat().st_mtime
 
     _state = (model, {
         "active_model": ACTIVE_MODEL_NAME,
@@ -104,6 +130,7 @@ def load_initial() -> None:
         "loaded_at": loaded_at,
         "ready": True,
     })
+    _last_mtime = mtime
     logger.info("✅ YOLO model loaded successfully.")
     logger.info(f"Model meta: sha256={sha256[:12]}… size={size_bytes} loaded_at={loaded_at}")
 
@@ -112,8 +139,24 @@ def get_model():
     """Return ``(YOLO, meta_dict)`` or raise 503.
 
     Safe to call from any thread without lock — tuple read is atomic
-    under CPython GIL.
+    under CPython GIL. If mtime has changed, triggers hot-reload.
     """
+    global _last_mtime
+    path = _active_path()
+    
+    # Check if file has been updated on disk by another worker/admin action
+    if path.exists():
+        try:
+            mtime = path.stat().st_mtime
+            if _last_mtime is None or mtime > _last_mtime:
+                with _reload_lock:
+                    # Double-check mtime after acquiring lock
+                    mtime = path.stat().st_mtime
+                    if _last_mtime is None or mtime > _last_mtime:
+                        _reload_model(path)
+        except Exception as e:
+            logger.warning(f"Failed to check active.pt modification time: {e}")
+
     model, meta = _state
     if model is None:
         raise AppException(
@@ -136,9 +179,12 @@ def swap_model(new_model, meta: dict) -> None:
     Called by ``admin_model_service.save_uploaded_model`` after the new
     model has been validated, loaded, and the disk file has been replaced.
     """
-    global _state
+    global _state, _last_mtime
+    path = _active_path()
     with _reload_lock:
         _state = (new_model, meta)
+        if path.exists():
+            _last_mtime = path.stat().st_mtime
         logger.info({
             "event": "model_reload_success",
             "sha256": meta.get("sha256"),

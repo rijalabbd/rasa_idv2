@@ -31,7 +31,7 @@ logger = logging.getLogger(__name__)
 ACTIVE_MODEL_NAME = "active.pt"
 TMP_MODEL_NAME = "active_upload.pt"
 MIN_MODEL_SIZE = 1 * 1024 * 1024       # 1 MB
-MAX_MODEL_SIZE = 200 * 1024 * 1024     # 200 MB
+MAX_MODEL_SIZE = 300 * 1024 * 1024     # 300 MB
 
 
 def _get_models_dir() -> Path:
@@ -155,7 +155,13 @@ def save_uploaded_model(file: UploadFile, request_id: str = "") -> dict:
 
         # Run a tiny dummy predict to prove inference works
         dummy_img = np.zeros((32, 32, 3), dtype=np.uint8)
-        new_model.predict(dummy_img, verbose=False)
+        new_model.predict(
+            dummy_img, 
+            verbose=False,
+            save=False,
+            save_txt=False,
+            save_conf=False
+        )
 
         logger.info(f"✅ Pre-swap YOLO validation passed for uploaded file ({written} bytes, {len(new_model.names)} classes)")
     except AppException:

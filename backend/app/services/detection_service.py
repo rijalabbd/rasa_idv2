@@ -12,8 +12,14 @@ from app.core.config import settings
 from app.core.exceptions import AppException
 from app.core.paths import STORAGE_DIR
 
+import threading
+import gc
+
 # Setup logger
 logger = logging.getLogger(__name__)
+
+# Thread lock to guarantee sequential YOLO inference and prevent race conditions
+inference_lock = threading.Lock()
 
 def run_yolo_inference(image_path: str, request_id: str) -> tuple[List[Dict[str, Any]], float]:
     """Run actual YOLO inference using Ultralytics."""
@@ -25,27 +31,45 @@ def run_yolo_inference(image_path: str, request_id: str) -> tuple[List[Dict[str,
     model, meta = model_manager.get_model()
     
     start_time = time.perf_counter()
-    results = model.predict(
-        absolute_image_path, 
-        conf=settings.CONF_THRESHOLD, 
-        iou=settings.IOU_THRESHOLD,
-        verbose=False
-    )
-    inference_time_ms = (time.perf_counter() - start_time) * 1000
     
-    detections = []
-    for result in results:
-        for box in result.boxes:
-            cls_id = int(box.cls[0])
-            label = model.names[cls_id]
-            confidence = float(box.conf[0])
-            bbox = box.xyxy[0].tolist() # [x1, y1, x2, y2]
+    # Acquire lock to prevent race conditions on shared YOLO model object
+    with inference_lock:
+        results = model.predict(
+            absolute_image_path, 
+            conf=settings.CONF_THRESHOLD, 
+            iou=settings.IOU_THRESHOLD,
+            verbose=False,
+            save=False,       # Prevent saving runs/predict image files to disk
+            save_txt=False,   # Prevent saving label files to disk
+            save_conf=False   # Prevent saving confidence values to disk
+        )
+        
+        detections = []
+        for result in results:
+            for box in result.boxes:
+                cls_id = int(box.cls[0])
+                label = model.names[cls_id]
+                confidence = float(box.conf[0])
+                bbox = box.xyxy[0].tolist() # [x1, y1, x2, y2]
+                
+                detections.append({
+                    "label": label,
+                    "confidence": confidence,
+                    "bbox": bbox
+                })
+        
+        # Explicitly clear cached state of YOLO predictor if it exists
+        try:
+            if hasattr(model, 'predictor') and model.predictor is not None:
+                model.predictor.results = None
+        except Exception:
+            pass
             
-            detections.append({
-                "label": label,
-                "confidence": confidence,
-                "bbox": bbox
-            })
+        # Explicitly free memory and collect garbage
+        del results
+        gc.collect()
+
+    inference_time_ms = (time.perf_counter() - start_time) * 1000
     
     # Structured Log — includes sha256 + loaded_at for hot-reload tracing
     log_payload = {
