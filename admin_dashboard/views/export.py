@@ -70,11 +70,21 @@ def do_yolo_export(kind: str, only_new: bool = True):
     endpoint = f"/admin/export/yolo/{kind}?mode={mode}"
 
     with st.spinner(f"Sedang membuat dataset YOLO {kind}..."):
-        content, status, headers, ref_id = api_request("GET", endpoint, timeout=120)
+        content, status, headers, _ = api_request("GET", endpoint, timeout=120)
 
-    if status == 200 and content:
-        exported = headers.get("x-export-count", "?") if headers else "?"
-        skipped = headers.get("x-skip-count", "?") if headers else "?"
+    # Capture Request ID from session state
+    req_id = st.session_state.get("last_request_id", "")
+    ref = f" (Ref: {req_id})" if req_id else ""
+
+    if status == 200:
+        # Check export count from headers
+        exported = "0"
+        if headers:
+            exported = headers.get("x-export-count") or headers.get("X-Export-Count") or "0"
+            
+        if exported == "0" or not content:
+            st.session_state[f"{key}_msg"] = "Tidak ada data yang bisa diekspor."
+            return
 
         st.session_state[f"{key}_zip"] = content
 
@@ -82,17 +92,19 @@ def do_yolo_export(kind: str, only_new: bool = True):
             with zipfile.ZipFile(io.BytesIO(content)) as z:
                 namelist = z.namelist()
                 st.session_state[f"{key}_files"] = namelist
+                skipped = "0"
+                if headers:
+                    skipped = headers.get("x-skip-count") or headers.get("X-Skip-Count") or "0"
                 st.session_state[f"{key}_msg"] = (
                     f"ZIP berhasil dibuat ({len(content):,} byte) — "
                     f"{exported} data diekspor, {skipped} dilewati"
                 )
         except Exception as e:
-            st.session_state[f"{key}_msg"] = f"ZIP dibuat tetapi tidak valid: {e}"
+            st.session_state[f"{key}_msg"] = f"ZIP dibuat tetapi tidak valid: {e}{ref}"
     else:
         err_detail = ""
         if isinstance(content, dict):
             err_detail = f" — {content.get('code', '')}: {content.get('detail', '')}"
-        ref = f" (Ref: {ref_id})" if ref_id else ""
         st.session_state[f"{key}_err"] = f"Ekspor gagal dengan kode status {status}{err_detail}{ref}"
 
 
