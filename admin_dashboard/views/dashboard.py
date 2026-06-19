@@ -121,7 +121,7 @@ def render_dashboard():
 
     st.markdown(h2("bar-chart-2", "Statistik Ringkasan"), unsafe_allow_html=True)
 
-    if st.button("🔄 Muat Ulang Semua", key="refresh_all_btn"):
+    if st.button("🔄 Segarkan Data", key="refresh_all_btn"):
         fetch_summary()
         fetch_model_status()
         fetch_model_classes()
@@ -133,39 +133,39 @@ def render_dashboard():
 
     with col1:
         st.metric(
-            label="Total Feedback",
+            label="Total Umpan Balik",
             value=summary.get("feedback_total", 0) if summary else "-"
         )
 
     with col2:
         st.metric(
-            label="Feedback Tertunda",
+            label="Masukan Belum Diproses",
             value=summary.get("feedback_pending", 0) if summary else "-",
-            help="is_processed = false"
+            help="Jumlah feedback koreksi gizi dari pengguna yang belum ditinjau."
         )
 
     with col3:
         st.metric(
-            label="Total Permintaan Kelas",
+            label="Total Usulan Menu Baru",
             value=summary.get("class_requests_total", 0) if summary else "-"
         )
 
     with col4:
         st.metric(
-            label="Permintaan Kelas Tertunda",
+            label="Usulan Menu Tertunda",
             value=summary.get("class_requests_pending", 0) if summary else "-",
-            help="is_exported = false"
+            help="Jumlah permintaan penambahan kelas makanan baru yang belum diekspor."
         )
 
     with col5:
         st.metric(
-            label="Deteksi Terlewat",
+            label="Deteksi Makanan Terlewat",
             value=summary.get("missed_detections_total", 0) if summary else "-",
-            help="Makanan tidak terdeteksi, ditambahkan manual oleh pengguna"
+            help="Makanan tidak terdeteksi oleh AI, ditambahkan manual oleh pengguna"
         )
 
     if st.session_state.summary_error:
-        st.warning(f"Gagal memuat ringkasan: {st.session_state.summary_error}")
+        st.warning(f"Gagal memuat ringkasan data: {st.session_state.summary_error}")
 
     st.divider()
 
@@ -173,7 +173,7 @@ def render_dashboard():
     # Model Management Section
     # -------------------------------------------------------------------------
 
-    st.markdown(h2("cpu", "Manajemen Model"), unsafe_allow_html=True)
+    st.markdown(h2("cpu", "Manajemen Model YOLO"), unsafe_allow_html=True)
 
     model_col1, model_col2 = st.columns(2)
 
@@ -181,7 +181,7 @@ def render_dashboard():
     with model_col1:
         st.markdown(labeled_section("monitor", "Status Model Aktif"), unsafe_allow_html=True)
 
-        if st.button("Muat Ulang Status", key="refresh_model_btn"):
+        if st.button("Segarkan Status", key="refresh_model_btn"):
             fetch_model_status()
             st.rerun()
 
@@ -195,31 +195,31 @@ def render_dashboard():
             ready = status.get("ready", False)
 
             if active_model and ready:
-                st.info(f"**Model Aktif:** `{active_model}`")
+                st.info(f"**Model YOLO Aktif:** `{active_model}`")
                 st.caption(
-                    f"Size: {_fmt_size(size_bytes)} | "
+                    f"Ukuran: {_fmt_size(size_bytes)} | "
                     f"SHA256: {sha256[:12]}... | "
-                    f"Loaded: {format_datetime(loaded_at)}"
+                    f"Dimuat Pada: {format_datetime(loaded_at)}"
                 )
             elif active_model and not ready:
-                st.warning(f"Model `{active_model}` ditemukan tapi belum dimuat")
+                st.warning(f"Model `{active_model}` terdeteksi namun belum aktif.")
             else:
-                st.warning("File model aktif tidak ditemukan (active.pt hilang)")
-                st.caption("Unggah file .pt untuk mengaktifkannya")
+                st.warning("File model aktif tidak ditemukan (active.pt hilang).")
+                st.caption("Silakan unggah berkas model .pt baru di panel sebelah kanan.")
         elif st.session_state.model_status_error:
             st.error(st.session_state.model_status_error)
         else:
-            st.info("Memuat status...")
+            st.info("Memuat status model...")
 
     # Model Upload Panel
     with model_col2:
         st.markdown(labeled_section("upload", "Unggah Model Baru"), unsafe_allow_html=True)
 
         uploaded_file = st.file_uploader(
-            "Pilih file .pt",
+            "Pilih berkas model (.pt)",
             type=["pt"],
             key="model_uploader",
-            help="Unggah file model PyTorch (.pt)"
+            help="Unggah file model PyTorch YOLO hasil retraining (.pt)"
         )
 
         if uploaded_file is not None:
@@ -238,28 +238,27 @@ def render_dashboard():
     # Active Model Classes Table
     # -------------------------------------------------------------------------
     st.divider()
-    st.markdown(h2("list", "Kelas Model Aktif"), unsafe_allow_html=True)
+    st.markdown(h2("list", "Daftar Kelas Makanan Aktif"), unsafe_allow_html=True)
     
     col_classes_1, col_classes_2 = st.columns([3, 1])
     with col_classes_1:
-        st.markdown("Daftar kelas yang tersedia di model YOLO aktif.")
+        st.markdown("Berikut adalah daftar kelas makanan yang dapat dideteksi oleh model YOLO saat ini:")
     with col_classes_2:
-        if st.button("Muat Ulang Kelas", key="refresh_classes_btn"):
+        if st.button("Segarkan Daftar Kelas", key="refresh_classes_btn"):
             fetch_model_classes()
             st.rerun()
 
     if getattr(st.session_state, "model_classes_error", None):
         st.error(f"Gagal memuat kelas model: {st.session_state.model_classes_error}")
     elif not getattr(st.session_state, "model_classes_loaded", False) and not getattr(st.session_state, "model_classes", []):
-        st.info("Tidak ada kelas ditemukan. Pastikan model aktif sudah dimuat.")
+        st.info("Tidak ada kelas ditemukan. Pastikan file model aktif (`active.pt`) sudah diunggah.")
     else:
         classes = getattr(st.session_state, "model_classes", [])
         if classes:
-            # Format list of dicts into a clean display
             df = pd.DataFrame(classes)
             if 'id' in df.columns and 'name' in df.columns:
                 df = df[['id', 'name']]
-                df.columns = ["Class ID", "Class Name"]
+                df.columns = ["ID Kelas", "Nama Kelas Makanan"]
             
             st.dataframe(
                 df,

@@ -291,7 +291,17 @@ def icon_md(name: str, label: str = "", size: int = 16, color: str = "currentCol
     """
     svg = icon_html(name, size=size, color=color)
     if label:
-        return f'{svg}<span style="vertical-align:middle;">{label}</span>'
+        processed_label = label
+        if "**" in processed_label:
+            parts = processed_label.split("**")
+            new_parts = []
+            for i, part in enumerate(parts):
+                if i % 2 == 1:
+                    new_parts.append(f"<strong style='font-weight:600;'>{part}</strong>")
+                else:
+                    new_parts.append(part)
+            processed_label = "".join(new_parts)
+        return f'{svg}<span style="vertical-align:middle;">{processed_label}</span>'
     return svg
 
 

@@ -30,6 +30,41 @@ def api_url(path: str) -> str:
     return f"{base}/api/v1{path}"
 
 
+def clean_error_message(detail) -> str:
+    """Parse FastAPI/Pydantic validation errors or standard details into a friendly string."""
+    if isinstance(detail, list):
+        messages = []
+        for err in detail:
+            if isinstance(err, dict):
+                loc = err.get("loc", [])
+                msg = err.get("msg", "")
+                
+                # Terjemahkan pesan umum
+                if "field required" in msg:
+                    msg = "Wajib diisi"
+                elif "value is not a valid" in msg:
+                    msg = "Nilai tidak valid"
+                
+                # Ambil nama field
+                field = loc[-1] if loc else "data"
+                # Terjemahkan nama field umum
+                field_map = {
+                    "yolo_label": "Label YOLO",
+                    "tkpi_food_id": "ID Makanan TKPI",
+                    "ui_status": "Status Pencocokan",
+                    "ui_note": "Catatan",
+                    "file": "Berkas/File",
+                }
+                field_name = field_map.get(field, str(field))
+                messages.append(f"{field_name}: {msg}")
+            else:
+                messages.append(str(err))
+        return ", ".join(messages)
+    elif isinstance(detail, dict):
+        return detail.get("detail", str(detail))
+    return str(detail)
+
+
 def api_request(method: str, path: str, *, params=None, json=None, files=None, timeout=API_TIMEOUT) -> tuple:
     """
     Unified helper for API requests.
@@ -69,10 +104,7 @@ def api_request(method: str, path: str, *, params=None, json=None, files=None, t
             try:
                 err_data = resp.json()
                 detail = err_data.get("detail", resp.text)
-                
-                # Flatten nested detail if it's a dict (backend Pydantic/FastAPI structure)
-                if isinstance(detail, dict):
-                    detail = detail.get("detail", str(detail))
+                detail = clean_error_message(detail)
                 
                 code = err_data.get("code", "ERROR")
                 st.toast(f"❌ {code}: {detail} (Ref: {req_id})")

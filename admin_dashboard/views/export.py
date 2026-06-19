@@ -110,7 +110,7 @@ def do_yolo_export(kind: str, only_new: bool = True):
 
 def _render_zip_contents(files: list[str], key_prefix: str):
     """Render ZIP file list with file-type icons."""
-    with st.expander(f"Isi ZIP ({len(files)} file)", expanded=False):
+    with st.expander(f"Pratinjau Isi ZIP ({len(files)} berkas)", expanded=False):
         for f in files:
             if "/images/" in f:
                 icon = icon_md("image", f"`{f}`", size=14)
@@ -124,29 +124,29 @@ def _render_zip_contents(files: list[str], key_prefix: str):
 def render_export():
     """Render the Export Dataset view."""
 
-    st.markdown(h1("package", "Ekspor Dataset"), unsafe_allow_html=True)
+    st.markdown(h1("package", "Ekspor Dataset & Log Aktivitas"), unsafe_allow_html=True)
     st.divider()
 
     summary = get_export_summary()
 
     # ── Section 1: Combined JSONL export ─────────────────────────────────
-    st.markdown(h2("file-text", "Ekspor Gabungan JSONL"), unsafe_allow_html=True)
-    st.caption("Ekspor `feedback.jsonl` + `class_requests.jsonl` (tanpa gambar)")
+    st.markdown(h2("file-text", "Ekspor Gabungan Log Aktivitas (JSONL)"), unsafe_allow_html=True)
+    st.caption("Mengekspor file log `feedback.jsonl` dan `class_requests.jsonl` dalam satu paket ZIP (tanpa berkas gambar).")
 
-    c1, c2 = st.columns([1, 1])
+    c1, c2 = st.columns([1.2, 1])
     with c1:
-        only_new_combined = st.toggle("Hanya data yang belum diekspor", value=True, key="only_new_combined")
+        only_new_combined = st.toggle("Hanya ekspor data baru (belum pernah diekspor)", value=True, key="only_new_combined")
     with c2:
-        if st.button("Batalkan Ekspor Gabungan Terakhir", key="undo_combined"):
+        if st.button("Batalkan Status Ekspor Gabungan Terakhir", key="undo_combined"):
             # Combined affects both feedback and class_request, we use 'combined' type
             if do_undo_export("feedback"): # Combined currently marks logs as individual types
                 get_export_summary() # Refresh
                 st.rerun()
 
-    btn_col, result_col = st.columns([1, 2])
+    btn_col, result_col = st.columns([1.2, 2])
 
     with btn_col:
-        if st.button("Buat ZIP Gabungan", key="generate_zip_btn", type="secondary"):
+        if st.button("Proses & Buat ZIP Gabungan", key="generate_zip_btn", type="secondary", use_container_width=True):
             do_generate_export("Combined", only_new_combined)
             st.rerun()
 
@@ -171,23 +171,23 @@ def render_export():
 
     # ── Section 2: YOLO Feedback Dataset ─────────────────────────────────
     fb_sum = summary.get("feedback", {})
-    st.markdown(h2("tag", "Dataset Feedback YOLO"), unsafe_allow_html=True)
+    st.markdown(h2("tag", "Dataset Umpan Balik YOLO (Koreksi Makanan)"), unsafe_allow_html=True)
     fb_m1, fb_m2, fb_m3 = st.columns(3)
-    fb_m1.metric("Total", fb_sum.get('total', 0))
+    fb_m1.metric("Total Masukan Masuk", fb_sum.get('total', 0))
     fb_m2.metric("Belum Diekspor", fb_sum.get('new', 0), delta=f"{fb_sum.get('new', 0)} baru" if fb_sum.get('new', 0) > 0 else None)
     fb_m3.metric("Ekspor Terakhir", fb_sum.get('last_exported_at', 'Belum pernah')[:10] if fb_sum.get('last_exported_at') else 'Belum pernah')
 
-    fb_t1, fb_t2 = st.columns([1, 1])
+    fb_t1, fb_t2 = st.columns([1.2, 1])
     with fb_t1:
-        only_new_fb = st.toggle("Hanya data Feedback yang belum diekspor", value=True, key="only_new_fb")
+        only_new_fb = st.toggle("Hanya ekspor data Umpan Balik baru", value=True, key="only_new_fb")
     with fb_t2:
-        if st.button("Batalkan Ekspor Feedback Terakhir", key="undo_fb"):
+        if st.button("Batalkan Status Ekspor Umpan Balik Terakhir", key="undo_fb"):
             if do_undo_export("feedback"):
                 st.rerun()
 
-    fb_col1, fb_col2 = st.columns([1, 2])
+    fb_col1, fb_col2 = st.columns([1.2, 2])
     with fb_col1:
-        if st.button("Ekspor Feedback YOLO", key="yolo_fb_btn", type="primary"):
+        if st.button("Proses Dataset Umpan Balik", key="yolo_fb_btn", type="primary", use_container_width=True):
             do_yolo_export("feedback", only_new_fb)
             st.rerun()
 
@@ -213,23 +213,23 @@ def render_export():
 
     # ── Section 3: YOLO Class Request Dataset ────────────────────────────
     cr_sum = summary.get("class_request", {})
-    st.markdown(h2("tag", "Dataset Class Request YOLO"), unsafe_allow_html=True)
+    st.markdown(h2("tag", "Dataset Usulan Menu Baru YOLO"), unsafe_allow_html=True)
     cr_m1, cr_m2, cr_m3 = st.columns(3)
-    cr_m1.metric("Total", cr_sum.get('total', 0))
+    cr_m1.metric("Total Usulan", cr_sum.get('total', 0))
     cr_m2.metric("Belum Diekspor", cr_sum.get('new', 0), delta=f"{cr_sum.get('new', 0)} baru" if cr_sum.get('new', 0) > 0 else None)
     cr_m3.metric("Ekspor Terakhir", cr_sum.get('last_exported_at', 'Belum pernah')[:10] if cr_sum.get('last_exported_at') else 'Belum pernah')
 
-    cr_t1, cr_t2 = st.columns([1, 1])
+    cr_t1, cr_t2 = st.columns([1.2, 1])
     with cr_t1:
-        only_new_cr = st.toggle("Hanya data Class Request yang belum diekspor", value=True, key="only_new_cr")
+        only_new_cr = st.toggle("Hanya ekspor data Usulan Menu baru", value=True, key="only_new_cr")
     with cr_t2:
-        if st.button("Batalkan Ekspor Class Request Terakhir", key="undo_cr"):
+        if st.button("Batalkan Status Ekspor Usulan Terakhir", key="undo_cr"):
             if do_undo_export("class_request"):
                 st.rerun()
 
-    cr_col1, cr_col2 = st.columns([1, 2])
+    cr_col1, cr_col2 = st.columns([1.2, 2])
     with cr_col1:
-        if st.button("Ekspor Class Request YOLO", key="yolo_cr_btn", type="primary"):
+        if st.button("Proses Dataset Usulan Menu", key="yolo_cr_btn", type="primary", use_container_width=True):
             do_yolo_export("class-requests", only_new_cr)
             st.rerun()
 
@@ -255,23 +255,23 @@ def render_export():
 
     # ── Section 4: YOLO Missed Detections Dataset ────────────────────────
     md_sum = summary.get("missed_detection", {})
-    st.markdown(h2("eye", "Dataset Missed Detection YOLO"), unsafe_allow_html=True)
+    st.markdown(h2("eye", "Dataset Deteksi Terlewat YOLO"), unsafe_allow_html=True)
     md_m1, md_m2, md_m3 = st.columns(3)
-    md_m1.metric("Total", md_sum.get('total', 0))
+    md_m1.metric("Total Terlewat", md_sum.get('total', 0))
     md_m2.metric("Belum Diekspor", md_sum.get('new', 0), delta=f"{md_sum.get('new', 0)} baru" if md_sum.get('new', 0) > 0 else None)
     md_m3.metric("Ekspor Terakhir", md_sum.get('last_exported_at', 'Belum pernah')[:10] if md_sum.get('last_exported_at') else 'Belum pernah')
 
-    md_t1, md_t2 = st.columns([1, 1])
+    md_t1, md_t2 = st.columns([1.2, 1])
     with md_t1:
-        only_new_md = st.toggle("Hanya data Missed Detection yang belum diekspor", value=True, key="only_new_md")
+        only_new_md = st.toggle("Hanya ekspor data Deteksi Terlewat baru", value=True, key="only_new_md")
     with md_t2:
-        if st.button("Batalkan Ekspor Missed Detection Terakhir", key="undo_md"):
+        if st.button("Batalkan Status Ekspor Terlewat Terakhir", key="undo_md"):
             if do_undo_export("missed_detection"):
                 st.rerun()
 
-    md_col1, md_col2 = st.columns([1, 2])
+    md_col1, md_col2 = st.columns([1.2, 2])
     with md_col1:
-        if st.button("Ekspor Missed Detection YOLO", key="yolo_md_btn", type="primary"):
+        if st.button("Proses Dataset Deteksi Terlewat", key="yolo_md_btn", type="primary", use_container_width=True):
             do_yolo_export("missed", only_new_md)
             st.rerun()
 

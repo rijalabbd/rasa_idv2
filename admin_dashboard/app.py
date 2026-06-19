@@ -24,9 +24,105 @@ def get_cookie_manager():
 # =============================================================================
 
 st.set_page_config(
-    page_title="RASA-ID Admin Dashboard",
+    page_title="RASA-ID Panel Admin",
     page_icon=":material/admin_panel_settings:",
     layout="wide"
+)
+
+# Kustomisasi CSS untuk visual premium mint-green RASA-ID
+st.markdown(
+    """
+    <style>
+    /* Menggunakan font modern */
+    @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap');
+    
+    html, body, [class*="css"], [class*="st-"] {
+        font-family: 'Outfit', sans-serif;
+    }
+    
+    /* Percantik tampilan Metric Cards */
+    div[data-testid="metric-container"] {
+        background-color: #f8fafc;
+        border-top: 4px solid #10b981; /* Aksen Hijau Mint */
+        border-radius: 12px;
+        padding: 18px 24px;
+        box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05), 0 2px 4px -2px rgb(0 0 0 / 0.05);
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    div[data-testid="metric-container"]:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+    }
+    div[data-testid="stMetricValue"] {
+        color: #0f172a;
+        font-weight: 700;
+        font-size: 2.2rem;
+    }
+    div[data-testid="stMetricLabel"] {
+        color: #64748b;
+        font-weight: 600;
+        font-size: 0.95rem;
+    }
+    
+    /* Tombol Utama (Primary) - Hijau Mint */
+    div.stButton > button[kind="primary"] {
+        background-color: #10b981 !important;
+        border-color: #10b981 !important;
+        color: white !important;
+        font-weight: 600 !important;
+        border-radius: 8px !important;
+        padding: 10px 20px !important;
+        transition: all 0.25s ease !important;
+    }
+    div.stButton > button[kind="primary"]:hover {
+        background-color: #059669 !important;
+        border-color: #059669 !important;
+        transform: translateY(-1px) !important;
+        box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2) !important;
+    }
+    
+    /* Tombol Kedua (Secondary) */
+    div.stButton > button[kind="secondary"] {
+        background-color: #f1f5f9 !important;
+        border-color: #cbd5e1 !important;
+        color: #334155 !important;
+        font-weight: 500 !important;
+        border-radius: 8px !important;
+        transition: all 0.2s ease !important;
+    }
+    div.stButton > button[kind="secondary"]:hover {
+        background-color: #e2e8f0 !important;
+        color: #0f172a !important;
+        border-color: #94a3b8 !important;
+    }
+    
+    /* Alert banner kustom */
+    div.stAlert {
+        border-radius: 12px !important;
+        border: none !important;
+    }
+    
+    /* Judul halaman */
+    h1, h2, h3 {
+        color: #0f172a !important;
+        font-family: 'Outfit', sans-serif !important;
+        font-weight: 700 !important;
+    }
+    
+    /* Sidebar premium visual */
+    section[data-testid="stSidebar"] {
+        background-color: #0f172a !important;
+        color: #cbd5e1 !important;
+    }
+    section[data-testid="stSidebar"] hr {
+        border-color: #334155 !important;
+    }
+    section[data-testid="stSidebar"] span, section[data-testid="stSidebar"] p {
+        color: #cbd5e1 !important;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True
 )
 
 # =============================================================================
@@ -149,11 +245,11 @@ def do_ping_api():
     """Ping the API health endpoint."""
     _, status, _, _ = api_request("GET", "/health", timeout=10)
     if status == 200:
-        st.session_state.ping_message = "API online"
+        st.session_state.ping_message = "Koneksi API Berhasil (Online)"
         st.session_state.ping_error = None
     else:
         st.session_state.ping_message = None
-        st.session_state.ping_error = f"API responded with status {status}"
+        st.session_state.ping_error = f"API Gagal Merespons (Status {status})"
 
 with st.sidebar:
     # Brand
@@ -163,7 +259,7 @@ with st.sidebar:
     )
 
     # Tombol Logout
-    if st.button("🔓 Logout", use_container_width=True):
+    if st.button("🔓 Keluar", use_container_width=True):
         cookie_manager.delete("admin_auth")
         st.session_state["authenticated"] = False
         st.rerun()
@@ -172,7 +268,7 @@ with st.sidebar:
 
     # Navigation label with icon
     st.markdown(
-        icon_md("layout-dashboard", "Menu", size=14),
+        icon_md("layout-dashboard", "Menu Utama", size=14),
         unsafe_allow_html=True,
     )
 
@@ -185,7 +281,7 @@ with st.sidebar:
     }
 
     selected_page = st.radio(
-        "Go to",
+        "Navigasi Halaman",
         list(_nav_items.keys()),
         label_visibility="collapsed",
         format_func=lambda p: f"{_nav_items.get(p, '')} {p}",
@@ -195,39 +291,39 @@ with st.sidebar:
 
     # Tools section
     st.markdown(
-        icon_md("wrench", "**Alat**", size=14),
+        icon_md("wrench", "**Peralatan Sistem**", size=14),
         unsafe_allow_html=True,
     )
 
-    if st.button("Ping API Health", use_container_width=True):
+    if st.button("Cek Status API", use_container_width=True):
         do_ping_api()
 
     if st.session_state.ping_message:
         st.markdown(
-            icon_md("check-circle", st.session_state.ping_message, size=14, color="#2e7d32"),
+            icon_md("check-circle", st.session_state.ping_message, size=14, color="#10b981"),
             unsafe_allow_html=True,
         )
     if st.session_state.ping_error:
         st.markdown(
-            icon_md("x-circle", st.session_state.ping_error, size=14, color="#c62828"),
+            icon_md("x-circle", st.session_state.ping_error, size=14, color="#ef4444"),
             unsafe_allow_html=True,
         )
 
     # Request Debugger — hanya tampilkan jika sudah ada request
     if st.session_state.last_request_info:
-        with st.expander("Debug Request"):
+        with st.expander("Debug Permintaan"):
             st.markdown(
-                icon_md("search", "Request Terakhir", size=13),
+                icon_md("search", "Permintaan Terakhir", size=13),
                 unsafe_allow_html=True,
             )
             info = st.session_state.last_request_info
-            st.markdown(f"**Method**: `{info['method']}`")
+            st.markdown(f"**Metode**: `{info['method']}`")
             st.markdown(f"**URL**: `{info['url']}`")
-            st.caption(f"Time: {info['time']}")
+            st.caption(f"Waktu: {info['time']}")
             req_id = st.session_state.last_request_id
             if req_id:
                 st.code(req_id, language=None)
-                st.caption("Request ID (Header)")
+                st.caption("ID Permintaan (Header)")
 
 
 # =============================================================================
@@ -245,4 +341,4 @@ elif selected_page == "Ekspor Dataset":
 
 # Footer
 st.divider()
-st.caption("RASA-ID Admin Dashboard · v1.0")
+st.caption("RASA-ID Panel Admin · v1.0")
