@@ -13,13 +13,20 @@
 //   features      : (opsional) List fitur untuk step gabungan
 //   fallbackTitle : Judul jika elemen target tidak ditemukan
 //   fallbackDesc  : Deskripsi jika elemen target tidak ditemukan
+//   iconComponent : Lucide React component untuk ikon step
 // ─────────────────────────────────────────────────────────────────────────────
+
+import {
+  Utensils, Camera, Search, BarChart3, Trophy,
+  UtensilsCrossed, Pencil, PlusCircle, FilePen,
+  PartyPopper, Lightbulb,
+} from 'lucide-react';
 
 const TOUR_STEPS = [
   // ─── STEP 0: Welcome ──────────────────────────────────────────────────────
   {
     type: 'fullscreen',
-    icon: '🍽️',
+    iconComponent: Utensils,
     iconBg: 'linear-gradient(135deg, #22c55e 0%, #15803d 100%)',
     title: 'Selamat Datang di RASA-ID!',
     description: 'Yuk, coba langsung! Kamu akan dipandu langkah demi langkah mengenal semua fitur.',
@@ -30,9 +37,11 @@ const TOUR_STEPS = [
   {
     type: 'spotlight',
     target: 'upload-zone',
-    title: '📸 Upload Foto',
+    iconComponent: Camera,
+    title: 'Upload Foto',
     description: 'Ambil foto makananmu atau pilih dari galeri. Belum punya? Pakai foto contoh dari kami.',
-    tip: '💡 Foto dari atas, cahaya terang = hasil lebih akurat!',
+    tip: 'Foto dari atas, cahaya terang = hasil lebih akurat!',
+    tipIcon: Lightbulb,
     waitForAction: 'upload',
     fallbackTitle: 'Upload Foto Makanan',
     fallbackDesc: 'Buka halaman Analisis untuk mulai.',
@@ -42,7 +51,8 @@ const TOUR_STEPS = [
   {
     type: 'spotlight',
     target: 'detect-button',
-    title: '🔍 Mulai Deteksi',
+    iconComponent: Search,
+    title: 'Mulai Deteksi',
     description: 'Klik tombol ini dan AI akan langsung mengenali makanan di fotomu.',
     waitForAction: 'detect',
     fallbackTitle: 'Proses Deteksi AI',
@@ -53,7 +63,8 @@ const TOUR_STEPS = [
   {
     type: 'spotlight',
     target: 'summary-card',
-    title: '📊 Hasil Deteksi',
+    iconComponent: BarChart3,
+    title: 'Hasil Deteksi',
     description: 'Lihat jumlah makanan yang terdeteksi dan tingkat akurasi AI di sini.',
     waitForAction: null,
     fallbackTitle: 'Ringkasan Deteksi',
@@ -64,7 +75,8 @@ const TOUR_STEPS = [
   {
     type: 'spotlight',
     target: 'ranking-card',
-    title: '🏆 Ranking Kalori',
+    iconComponent: Trophy,
+    title: 'Ranking Kalori',
     description: 'Makanan diurutkan dari kalori terbesar. Total protein, lemak, dan karbo juga ditampilkan.',
     waitForAction: null,
     fallbackTitle: 'Ranking & Nutrisi',
@@ -75,7 +87,8 @@ const TOUR_STEPS = [
   {
     type: 'spotlight',
     target: 'food-card',
-    title: '🍛 Detail Makanan',
+    iconComponent: UtensilsCrossed,
+    title: 'Detail Makanan',
     description: 'Tiap makanan punya info nutrisi lengkap. Atur porsi (½–2) agar hitungan lebih sesuai piringmu.',
     waitForAction: null,
     fallbackTitle: 'Detail Makanan',
@@ -87,7 +100,8 @@ const TOUR_STEPS = [
     type: 'spotlight',
     autoClick: 'edit-btn',          // Auto-click tombol Edit
     target: 'correction-form',      // Sorot form koreksi yang muncul
-    title: '✏️ Koreksi Makanan',
+    iconComponent: Pencil,
+    title: 'Koreksi Makanan',
     description: 'Ini adalah form koreksi. Jika AI salah menebak, ketik nama makanan yang benar lalu klik "Ganti".',
     waitForAction: null,
     fallbackTitle: 'Koreksi Makanan',
@@ -99,7 +113,8 @@ const TOUR_STEPS = [
     type: 'spotlight',
     autoClick: 'add-food-btn',      // Auto-click tombol + Tambah
     target: 'add-food-form',        // Sorot form pencarian makanan
-    title: '➕ Tambah Makanan',
+    iconComponent: PlusCircle,
+    title: 'Tambah Makanan',
     description: 'Ini adalah form pencarian. Ketik nama makanan yang terlewat, pilih dari daftar, lalu klik "Tambahkan".',
     waitForAction: null,
     fallbackTitle: 'Tambah Manual',
@@ -111,7 +126,8 @@ const TOUR_STEPS = [
     type: 'spotlight',
     autoClick: 'request-link',      // Auto-click link "Ajukan Kelas Baru"
     target: 'request-class',        // Sorot form request
-    title: '📝 Ajukan Makanan Baru',
+    iconComponent: FilePen,
+    title: 'Ajukan Makanan Baru',
     description: 'Makanan belum ada di database? Ketik namanya di sini dan klik "Kirim Pengajuan" agar kami latih model AI.',
     waitForAction: null,
     fallbackTitle: 'Request Kelas Baru',
@@ -121,7 +137,7 @@ const TOUR_STEPS = [
   // ─── STEP 9: Selesai! ─────────────────────────────────────────────────────
   {
     type: 'fullscreen',
-    icon: '🎉',
+    iconComponent: PartyPopper,
     iconBg: 'linear-gradient(135deg, #22c55e 0%, #059669 100%)',
     title: 'Kamu Sudah Siap!',
     description: 'Sekarang coba sendiri! Setiap koreksimu membantu AI kami jadi lebih cerdas.',

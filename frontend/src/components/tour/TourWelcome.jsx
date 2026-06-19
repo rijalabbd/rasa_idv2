@@ -1,11 +1,12 @@
 // frontend/src/components/tour/TourWelcome.jsx
 // ─── Welcome & Completion overlay ───────────────────────────────────────────
-// Handles fullscreen steps: Step 0 (Welcome) and Step 7 (Selesai).
+// Handles fullscreen steps: Step 0 (Welcome) and Step 9 (Selesai).
+// Now renders Lucide icons instead of native emoji for consistency.
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { X, Rocket, ChevronRight } from 'lucide-react';
+import { X, Rocket, ChevronRight, Lightbulb } from 'lucide-react';
 import { useTour } from '../../hooks/useTour';
 import { ROUTES } from '../../constants/routes';
 import TOUR_STEPS from './tourSteps';
@@ -66,6 +67,9 @@ export default function TourWelcome() {
     if (e.target === e.currentTarget) handleClose();
   };
 
+  // Resolve the Lucide icon component
+  const IconComponent = step.iconComponent;
+
   return (
     <div
       className={`tour-welcome-overlay ${overlayState}`}
@@ -81,14 +85,12 @@ export default function TourWelcome() {
           <X size={18} strokeWidth={2.5} />
         </button>
 
-        {/* Icon */}
+        {/* Icon — Lucide component in gradient circle */}
         <div
           className="tour-welcome-icon"
           style={{ background: step.iconBg }}
         >
-          <span role="img" aria-hidden="true">
-            {step.icon}
-          </span>
+          {IconComponent && <IconComponent size={40} strokeWidth={2} />}
         </div>
 
         {/* Title */}
@@ -98,7 +100,12 @@ export default function TourWelcome() {
         <p className="tour-welcome-desc">{step.description}</p>
 
         {/* Tip */}
-        {step.tip && <div className="tour-welcome-tip">{step.tip}</div>}
+        {step.tip && (
+          <div className="tour-welcome-tip">
+            <Lightbulb size={14} strokeWidth={2.5} className="tour-welcome-tip-icon" />
+            {step.tip}
+          </div>
+        )}
 
         {/* Actions */}
         <div className="tour-welcome-actions">

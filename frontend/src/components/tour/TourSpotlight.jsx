@@ -2,10 +2,16 @@
 // ─── Spotlight component ────────────────────────────────────────────────────
 // Menyorot elemen DOM tertentu dengan overlay gelap + "lubang" transparan.
 // Jika elemen target tidak ditemukan → graceful fallback (tooltip di tengah).
+//
+// UX Enhancements:
+// - Fade-out → reposition → fade-in transitions between steps
+// - Step counter label ("3 / 10")
+// - Lucide icon badge next to tooltip title
+// - Lightbulb icon in tip box
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { X, ChevronLeft, ChevronRight } from 'lucide-react';
+import { X, ChevronLeft, ChevronRight, Lightbulb } from 'lucide-react';
 import { useTour } from '../../hooks/useTour';
 import TOUR_STEPS from './tourSteps';
 import './TourSpotlight.css';
@@ -21,11 +27,11 @@ export default function TourSpotlight() {
 
   const [targetRect, setTargetRect] = useState(null);
   const [tooltipPos, setTooltipPos] = useState({ top: -999, left: -999, arrowPos: 'hidden' });
-  const [animClass, setAnimClass] = useState('');
   const [overlayState, setOverlayState] = useState('entering');
+  const [tooltipAnim, setTooltipAnim] = useState('fade-in'); // 'fade-in' | 'fade-out' | 'visible'
   const tooltipRef = useRef(null);
-  const observerRef = useRef(null);
   const animFrameRef = useRef(null);
+  const prevStepRef = useRef(currentStep);
 
   const step = TOUR_STEPS[currentStep];
 
@@ -127,6 +133,21 @@ export default function TourSpotlight() {
     setTooltipPos({ top, left, arrowPos });
   }, [findTarget]);
 
+  // ── Smooth fade transition between steps ──────────────────────────────────
+  useEffect(() => {
+    if (!isTourActive || !isSpotlightStep) return;
+    
+    // If we're coming from another spotlight step, do a fade transition
+    if (prevStepRef.current !== currentStep) {
+      setTooltipAnim('fade-out');
+      const timer = setTimeout(() => {
+        setTooltipAnim('fade-in');
+      }, 220); // matches CSS fade-out duration
+      prevStepRef.current = currentStep;
+      return () => clearTimeout(timer);
+    }
+  }, [currentStep, isTourActive, isSpotlightStep]);
+
   // ── Auto-click, auto-scroll + Retry finding target ──────────────────────────
   useEffect(() => {
     if (!isTourActive || !isSpotlightStep) return;
@@ -187,8 +208,6 @@ export default function TourSpotlight() {
         // Find and click any cancel/close button inside the spotlighted form
         const formEl = document.querySelector(`[data-tour="${step.target}"]`);
         if (formEl) {
-          const closeBtn = formEl.querySelector('button[class*="cancel"], button[class*="Batal"]')
-            || formEl.querySelector('button:has(svg)'); // the X close button
           // Use a more reliable approach: look for buttons with "Batal" text or X icon
           const allBtns = formEl.querySelectorAll('button');
           for (const btn of allBtns) {
@@ -306,6 +325,9 @@ export default function TourSpotlight() {
   // Fallback mode: element not found
   const isFallback = !targetRect;
 
+  // Resolve the Lucide icon component for this step
+  const StepIcon = step?.iconComponent;
+
   return (
     <>
       {/* ── Overlay with SVG hole ──────────────────────────── */}
@@ -371,7 +393,7 @@ export default function TourSpotlight() {
       {/* ── Tooltip card ───────────────────────────────────── */}
       <div
         ref={tooltipRef}
-        className={`tour-tooltip`}
+        className={`tour-tooltip tour-tooltip-${tooltipAnim}`}
         style={
           isFallback
             ? {
@@ -404,22 +426,32 @@ export default function TourSpotlight() {
           <X size={16} strokeWidth={2.5} />
         </button>
 
-        {/* Title */}
-        <h3 className="tour-tooltip-title">
-          {isFallback ? step?.fallbackTitle || step?.title : step?.title}
-        </h3>
+        {/* Title with Lucide icon badge */}
+        <div className="tour-tooltip-header">
+          {StepIcon && (
+            <div className="tour-tooltip-icon-badge">
+              <StepIcon size={18} strokeWidth={2.5} />
+            </div>
+          )}
+          <h3 className="tour-tooltip-title">
+            {isFallback ? step?.fallbackTitle || step?.title : step?.title}
+          </h3>
+        </div>
 
         {/* Description */}
         <p className="tour-tooltip-desc">
           {isFallback ? step?.fallbackDesc || step?.description : step?.description}
         </p>
 
-        {/* Tip */}
+        {/* Tip with Lightbulb icon */}
         {step?.tip && !isFallback && (
-          <div className="tour-tooltip-tip">{step.tip}</div>
+          <div className="tour-tooltip-tip">
+            <Lightbulb size={14} strokeWidth={2.5} className="tour-tip-icon" />
+            {step.tip}
+          </div>
         )}
 
-        {/* Features list (step 6) */}
+        {/* Features list */}
         {step?.features && !isFallback && (
           <div className="tour-tooltip-features">
             {step.features.map((f, i) => (
@@ -457,16 +489,19 @@ export default function TourSpotlight() {
           )}
         </div>
 
-        {/* Progress bar */}
-        <div className="tour-progress-bar">
-          {Array.from({ length: totalSteps }).map((_, i) => (
-            <div
-              key={i}
-              className={`tour-progress-segment ${
-                i < currentStep ? 'filled' : i === currentStep ? 'current' : ''
-              }`}
-            />
-          ))}
+        {/* Step counter + Progress bar */}
+        <div className="tour-progress-wrapper">
+          <span className="tour-step-counter">{currentStep + 1} / {totalSteps}</span>
+          <div className="tour-progress-bar">
+            {Array.from({ length: totalSteps }).map((_, i) => (
+              <div
+                key={i}
+                className={`tour-progress-segment ${
+                  i < currentStep ? 'filled' : i === currentStep ? 'current' : ''
+                }`}
+              />
+            ))}
+          </div>
         </div>
       </div>
     </>
