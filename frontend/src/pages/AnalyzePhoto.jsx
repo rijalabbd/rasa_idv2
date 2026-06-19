@@ -362,12 +362,12 @@ export default function AnalyzePhoto() {
   // â”€â”€ Derived State â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const calorieRanked = useMemo(() => {
     const selected = detectionItems.filter(it => it.selected && it.baseNutrition);
-    // Gunakan nama label YOLO (dengan underscore diganti spasi) agar tidak terlalu spesifik/ambigu
+    // Gunakan nama label YOLO (dengan underscore diganti spasi) agar tidak terlalu spesifik/ambigu, kecuali jika sudah dikoreksi
     const withCal = selected.map(it => {
-      const yoloName = (it.label && it.label !== 'manual') 
-        ? it.label.replace(/_/g, ' ') 
-        : it.currentName;
-      return { name: yoloName, kal: Math.round((it.baseNutrition.energi_kal || 0) * (it.portion || 1)) };
+      const displayName = (it.corrected || !it.label || it.label === 'manual') 
+        ? it.currentName 
+        : it.label.replace(/_/g, ' ');
+      return { name: displayName, kal: Math.round((it.baseNutrition.energi_kal || 0) * (it.portion || 1)) };
     });
     return withCal.sort((a, b) => b.kal - a.kal);
   }, [detectionItems]);
@@ -1007,9 +1007,11 @@ export default function AnalyzePhoto() {
                 const isSelected = item.selected !== false;
                 const isDetailsOpen = detailsOpen[index];
 
-                const originalDetectedName = (item.label && item.label !== 'manual') ? item.label : item.currentName;
+                const originalDetectedName = (item.label && item.label !== 'manual' && !item.corrected) ? item.label : item.currentName;
                 const displayTitle = (originalDetectedName || '').replace(/_/g, ' ');
-                const displaySubtitle = (item.currentName && item.currentName !== originalDetectedName) ? item.currentName : null;
+                const displaySubtitle = (item.corrected && item.label && item.label !== 'manual')
+                  ? `Terdeteksi sebagai: ${item.label.replace(/_/g, ' ')}`
+                  : (item.currentName && item.currentName !== originalDetectedName) ? item.currentName : null;
 
                 return (
                   <div key={index} data-tour={index === 0 ? 'food-card' : undefined} className={`bg-white rounded-[20px] p-4 sm:p-6 shadow-sm border transition-all duration-200 w-full ${isSelected ? 'border-emerald-200 ring-1 ring-emerald-50' : 'border-[#E5E7EB]'} ${isBelumAda ? 'opacity-80' : ''} animate-slide-up-fade opacity-0`} style={{ animationDelay: `${300 + (index * 100)}ms` }}>
@@ -1196,7 +1198,7 @@ export default function AnalyzePhoto() {
                                 <CheckCircle2 size={20} className="text-emerald-500 shrink-0" />
                                 <div>
                                   <div className="text-sm font-bold">{editSearch.selected.name}</div>
-                                  <div className="text-xs font-medium opacity-80">{editSearch.selected.nutrition?.energi_kal} kalori</div>
+                                  <div className="text-xs font-medium opacity-80">{editSearch.selected.energi_kal} kalori</div>
                                 </div>
                               </div>
                             )}
@@ -1343,6 +1345,7 @@ export default function AnalyzePhoto() {
                     <div>
                       <div className="text-[10px] font-bold uppercase tracking-wide opacity-70 mb-0.5">Siap ditambahkan</div>
                       <div className="text-sm font-bold">{addSearch.selected.name}</div>
+                      <div className="text-xs font-medium opacity-80">{addSearch.selected.energi_kal} kalori</div>
                     </div>
                   </div>
                 )}

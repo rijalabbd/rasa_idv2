@@ -70,8 +70,8 @@ export default function BoundingBoxOverlay({ imageUrl, detections }) {
       ctx.strokeRect(sx1, sy1, sw, sh);
 
       // Label text
-      const conf = (det.confidence * 100).toFixed(1);
-      const labelText = `${det.label} ${conf}%`;
+      const displayName = det.corrected ? det.currentName : (det.label || '').replace(/_/g, ' ');
+      const labelText = det.corrected ? displayName : `${displayName} ${(det.confidence * 100).toFixed(1)}%`;
 
       // Measure text
       ctx.font = 'bold 13px Inter, system-ui, sans-serif';
