@@ -54,7 +54,7 @@ def _show_error_banner(data, status: int, ref_id: str | None, action: str):
 def _show_summary(result: dict, ref_id: str | None):
     """Display import summary metrics."""
     dry_run = result.get("dry_run", True)
-    mode_label = "Simulasi Hasil Validasi" if dry_run else "Rangkuman Penerapan Database"
+    mode_label = "Dry-Run Validation Result" if dry_run else "Database Commit Summary"
 
     st.markdown(h2("search" if dry_run else "check-circle", mode_label), unsafe_allow_html=True)
 
@@ -62,19 +62,19 @@ def _show_summary(result: dict, ref_id: str | None):
         st.caption(f"Ref: `{ref_id}`")
 
     c1, c2, c3, c4 = st.columns(4)
-    c1.metric("Total Baris", result.get("rows_total", 0))
-    c2.metric("Baris Diproses", result.get("processed_count", 0))
-    c3.metric("Baris Dilewati", result.get("skipped_count", 0))
-    c4.metric("Baris Gagal (Error)", result.get("errors_count", 0))
+    c1.metric("Total Rows", result.get("rows_total", 0))
+    c2.metric("Processed Rows", result.get("processed_count", 0))
+    c3.metric("Skipped Rows", result.get("skipped_count", 0))
+    c4.metric("Failed Rows (Errors)", result.get("errors_count", 0))
 
     c5, c6, c7 = st.columns(3)
     if dry_run:
-        c5.metric("Data Baru (Akan Ditambah)", result.get("new_count", 0))
-        c6.metric("Data Lawas (Akan Diperbarui)", result.get("existing_count", 0))
+        c5.metric("New Items (To Insert)", result.get("new_count", 0))
+        c6.metric("Existing Items (To Update)", result.get("existing_count", 0))
     else:
-        c5.metric("Berhasil Ditambah", result.get("inserted_count", 0))
-        c6.metric("Berhasil Diperbarui", result.get("updated_count", 0))
-    c7.metric("Peringatan", result.get("warnings_count", 0))
+        c5.metric("Successfully Inserted", result.get("inserted_count", 0))
+        c6.metric("Successfully Updated", result.get("updated_count", 0))
+    c7.metric("Warnings", result.get("warnings_count", 0))
 
 
 def _show_issues(result: dict, kind: str):
@@ -86,7 +86,7 @@ def _show_issues(result: dict, kind: str):
     if count == 0:
         return
 
-    label = "Kesalahan (Error)" if kind == "errors" else "Peringatan (Warning)"
+    label = "Errors" if kind == "errors" else "Warnings"
     expander_icon = "x-circle" if kind == "errors" else "alert-triangle"
 
     with st.expander(
@@ -98,14 +98,14 @@ def _show_issues(result: dict, kind: str):
             unsafe_allow_html=True
         )
         if truncated:
-            st.info(f"Menampilkan {len(items)} dari {count} {label.lower()}.")
+            st.info(f"Showing {len(items)} of {count} {label.lower()}.")
 
         display = items[:20]
         table_data = [
             {
-                "Baris": item.get("row_number", ""),
-                "Kode TKPI": item.get("tkpi_code") or "—",
-                "Pesan Detail": item.get("message", ""),
+                "Row": item.get("row_number", ""),
+                "TKPI Code": item.get("tkpi_code") or "—",
+                "Detail Message": item.get("message", ""),
             }
             for item in display
         ]
@@ -114,7 +114,7 @@ def _show_issues(result: dict, kind: str):
             st.dataframe(table_data, use_container_width=True, hide_index=True)
 
         if len(items) > 20:
-            st.caption(f"... dan {len(items) - 20} data lainnya (unduh berkas CSV untuk daftar lengkap)")
+            st.caption(f"... and {len(items) - 20} more items (download CSV file for full list)")
 
         if items:
             csv_buf = io.StringIO()
@@ -127,7 +127,7 @@ def _show_issues(result: dict, kind: str):
                     "message": item.get("message", ""),
                 })
             st.download_button(
-                f"Unduh Berkas {label} (CSV)",
+                f"Download {label} File (CSV)",
                 csv_buf.getvalue(),
                 file_name=f"tkpi_import_{kind}.csv",
                 mime="text/csv",
@@ -137,15 +137,15 @@ def _show_issues(result: dict, kind: str):
 
 def render_tkpi_import():
     """Render the TKPI CSV Import view."""
-    st.markdown(h1("database", "Unggah Data Nilai Gizi (TKPI)"), unsafe_allow_html=True)
-    st.caption("Alur: Unggah Berkas CSV → Jalankan Simulasi Validasi → Tinjau Rangkuman → Terapkan ke Database")
+    st.markdown(h1("database", "Import TKPI Data"), unsafe_allow_html=True)
+    st.caption("Workflow: Upload CSV File → Run Validation Dry-Run → Review Summary → Apply to Database")
     st.divider()
 
     # ── File uploader ────────────────────────────────────────────────
     uploaded_file = st.file_uploader(
-        "Pilih berkas CSV TKPI",
+        "Select TKPI CSV File",
         type=["csv"],
-        help="Format berkas: UTF-8, pemisah koma (,) atau titik koma (;). Wajib memiliki kolom 'tkpi_code' dan 'name'.",
+        help="File format: UTF-8, comma (,) or semicolon (;) delimited. Columns 'tkpi_code' and 'name' are required.",
         key="tkpi_csv_file",
     )
 
@@ -173,7 +173,7 @@ def render_tkpi_import():
     with col_dry:
         dry_disabled = uploaded_file is None
         if st.button(
-            "Jalankan Simulasi Validasi",
+            "Run Validation Dry-Run",
             disabled=dry_disabled,
             use_container_width=True,
             type="primary",
@@ -184,7 +184,7 @@ def render_tkpi_import():
             st.session_state.tkpi_commit_ref = None
             st.session_state.tkpi_validated_hash = None
 
-            with st.spinner("Memvalidasi data CSV..."):
+            with st.spinner("Validating CSV data..."):
                 data, status, ref = _call_import(uploaded_file, dry_run=True)
 
             if status == 200 and data:
@@ -193,7 +193,7 @@ def render_tkpi_import():
                 st.session_state.tkpi_validated_hash = current_hash
             else:
                 st.session_state.tkpi_import_result = None
-                _show_error_banner(data, status, ref, "Simulasi Validasi")
+                _show_error_banner(data, status, ref, "Validation Dry-Run")
 
             st.rerun()
 
@@ -207,7 +207,7 @@ def render_tkpi_import():
     )
 
     if file_changed:
-        st.warning("Berkas berubah sejak validasi terakhir. Silakan jalankan ulang **Simulasi Uji Coba Validasi**.")
+        st.warning("File changed since last validation. Please run **Validation Dry-Run** again.")
 
     # ── Commit gate ──────────────────────────────────────────────────
     has_dry_run = dry_result is not None
@@ -218,7 +218,7 @@ def render_tkpi_import():
     confirm_checked = False
     if has_dry_run and has_zero_errors and file_present and hash_matches:
         confirm_checked = st.checkbox(
-            "Saya paham ini akan menyimpan dan menulis data ke dalam database.",
+            "I understand this will save and commit data to the production database.",
             key="tkpi_commit_confirm",
         )
 
@@ -232,7 +232,7 @@ def render_tkpi_import():
 
     with col_commit:
         if st.button(
-            "Terapkan & Simpan ke Database",
+            "Commit to Database",
             disabled=not can_commit,
             use_container_width=True,
             type="secondary",
@@ -240,20 +240,20 @@ def render_tkpi_import():
             st.session_state.tkpi_commit_result = None
             st.session_state.tkpi_commit_ref = None
 
-            with st.spinner("Mengimpor data ke database..."):
+            with st.spinner("Importing data to database..."):
                 data, status, ref = _call_import(uploaded_file, dry_run=False)
 
             if status == 200 and data:
                 st.session_state.tkpi_commit_result = data
                 st.session_state.tkpi_commit_ref = ref
-                st.toast("Data gizi berhasil disimpan!")
+                st.toast("Nutrition database updated successfully!")
             else:
-                _show_error_banner(data, status, ref, "Penerapan Database")
+                _show_error_banner(data, status, ref, "Database Commit")
 
             st.rerun()
 
     if not can_commit and has_dry_run and not has_zero_errors:
-        st.warning("Tidak dapat menyimpan: Harap perbaiki kesalahan pada berkas CSV terlebih dahulu, kemudian jalankan kembali simulasi validasi.")
+        st.warning("Cannot commit: Please resolve CSV validation errors first, then run dry-run again.")
 
     st.divider()
 
@@ -266,9 +266,9 @@ def render_tkpi_import():
         _show_issues(commit_result, "errors")
         _show_issues(commit_result, "warnings")
         st.success(
-            f"Data gizi berhasil disimpan: "
-            f"{commit_result.get('inserted_count', 0)} data baru ditambah, "
-            f"{commit_result.get('updated_count', 0)} data lama diperbarui."
+            f"Nutrition database updated successfully: "
+            f"{commit_result.get('inserted_count', 0)} new items inserted, "
+            f"{commit_result.get('updated_count', 0)} items updated."
         )
 
     elif dry_result:
@@ -279,9 +279,9 @@ def render_tkpi_import():
 
     # ── Current TKPI Data Preview ────────────────────────────────────
     st.divider()
-    st.markdown(h2("list", "Tinjau Data Nilai Gizi (Database)"), unsafe_allow_html=True)
+    st.markdown(h2("list", "Nutrition Database Preview (TKPI)"), unsafe_allow_html=True)
 
-    if st.button("Segarkan Tabel", key="tkpi_refresh"):
+    if st.button("Refresh Table", key="tkpi_refresh"):
         st.session_state.tkpi_preview_data = None
         st.rerun()
 
@@ -296,21 +296,21 @@ def render_tkpi_import():
     total = preview.get("total", 0)
     items = preview.get("items", [])
 
-    st.caption(f"Total: **{total}** item makanan terdaftar dalam database TKPI")
+    st.caption(f"Total: **{total}** food items registered in the TKPI database.")
 
     if items:
         table = [
             {
-                "Kode": item.get("tkpi_code", ""),
-                "Nama Makanan": item.get("name", ""),
-                "Energi (kcal)": item.get("energi_kal") or "—",
+                "TKPI Code": item.get("tkpi_code", ""),
+                "Food Name": item.get("name", ""),
+                "Energy (kcal)": item.get("energi_kal") or "—",
                 "Protein (g)": item.get("protein_g") or "—",
-                "Lemak (g)": item.get("lemak_g") or "—",
-                "Karbo (g)": item.get("karbo_g") or "—",
-                "Serat (g)": item.get("serat_g") or "—",
+                "Fat (g)": item.get("lemak_g") or "—",
+                "Carb (g)": item.get("karbo_g") or "—",
+                "Fiber (g)": item.get("serat_g") or "—",
             }
             for item in items
         ]
         st.dataframe(table, use_container_width=True, hide_index=True, height=400)
     else:
-        st.info("Data TKPI masih kosong. Silakan unggah berkas CSV untuk mengisi database.")
+        st.info("TKPI database is empty. Please upload a CSV file to populate it.")

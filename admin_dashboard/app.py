@@ -24,7 +24,7 @@ def get_cookie_manager():
 # =============================================================================
 
 st.set_page_config(
-    page_title="RASA-ID Panel Admin",
+    page_title="RASA-ID Admin Panel",
     page_icon=":material/admin_panel_settings:",
     layout="wide"
 )
@@ -57,22 +57,22 @@ def _render_login_page():
     with col_center:
         st.markdown("<br><br>", unsafe_allow_html=True)
         st.markdown(
-            "<h2 style='text-align:center;'>🔐 RASA-ID Admin</h2>",
+            "<h2 style='text-align:center;'>🔐 RASA-ID Admin Panel</h2>",
             unsafe_allow_html=True,
         )
         st.markdown(
-            "<p style='text-align:center; color:gray;'>Masukkan password untuk melanjutkan</p>",
+            "<p style='text-align:center; color:gray;'>Sign in to continue</p>",
             unsafe_allow_html=True,
         )
         st.markdown("<br>", unsafe_allow_html=True)
 
         with st.form("login_form", clear_on_submit=True):
             password = st.text_input(
-                "Password Admin",
+                "Admin Password",
                 type="password",
-                placeholder="Masukkan password...",
+                placeholder="Enter password...",
             )
-            submitted = st.form_submit_button("Masuk", use_container_width=True)
+            submitted = st.form_submit_button("Sign In", use_container_width=True)
 
         if submitted:
             if _check_password(password):
@@ -81,7 +81,7 @@ def _render_login_page():
                 st.session_state["authenticated"] = True
                 st.rerun()
             else:
-                st.error("❌ Password salah. Coba lagi.")
+                st.error("❌ Incorrect password. Please try again.")
 
 
 cookie_manager = get_cookie_manager()
@@ -149,11 +149,11 @@ def do_ping_api():
     """Ping the API health endpoint."""
     _, status, _, _ = api_request("GET", "/health", timeout=10)
     if status == 200:
-        st.session_state.ping_message = "Koneksi API Berhasil (Online)"
+        st.session_state.ping_message = "API Connected (Online)"
         st.session_state.ping_error = None
     else:
         st.session_state.ping_message = None
-        st.session_state.ping_error = f"API Gagal Merespons (Status {status})"
+        st.session_state.ping_error = f"API Offline (Status {status})"
 
 with st.sidebar:
     # Brand
@@ -163,7 +163,7 @@ with st.sidebar:
     )
 
     # Tombol Logout
-    if st.button("🔓 Keluar", use_container_width=True):
+    if st.button("🔓 Logout", use_container_width=True):
         cookie_manager.delete("admin_auth")
         st.session_state["authenticated"] = False
         st.rerun()
@@ -172,16 +172,16 @@ with st.sidebar:
 
     # Navigation label with icon
     st.markdown(
-        icon_md("layout-dashboard", "Menu Utama", size=14),
+        icon_md("layout-dashboard", "Main Menu", size=14),
         unsafe_allow_html=True,
     )
 
     # Page navigation with Material Icons
     _nav_items = {
         "Dashboard":       ":material/dashboard:",
-        "Pencocokan":      ":material/link:",
+        "Class Mappings":  ":material/link:",
         "Import TKPI":     ":material/database:",
-        "Ekspor Dataset":  ":material/download:",
+        "Dataset Export":  ":material/download:",
     }
 
     selected_page = st.radio(
@@ -195,11 +195,11 @@ with st.sidebar:
 
     # Tools section
     st.markdown(
-        icon_md("wrench", "**Peralatan Sistem**", size=14),
+        icon_md("wrench", "**System Tools**", size=14),
         unsafe_allow_html=True,
     )
 
-    if st.button("Cek Status API", use_container_width=True):
+    if st.button("Check API Status", use_container_width=True):
         do_ping_api()
 
     if st.session_state.ping_message:
@@ -215,19 +215,19 @@ with st.sidebar:
 
     # Request Debugger — hanya tampilkan jika sudah ada request
     if st.session_state.last_request_info:
-        with st.expander("Debug Permintaan"):
+        with st.expander("Request Debugger"):
             st.markdown(
-                icon_md("search", "Permintaan Terakhir", size=13),
+                icon_md("search", "Last Request", size=13),
                 unsafe_allow_html=True,
             )
             info = st.session_state.last_request_info
-            st.markdown(f"**Metode**: `{info['method']}`")
+            st.markdown(f"**Method**: `{info['method']}`")
             st.markdown(f"**URL**: `{info['url']}`")
-            st.caption(f"Waktu: {info['time']}")
+            st.caption(f"Time: {info['time']}")
             req_id = st.session_state.last_request_id
             if req_id:
                 st.code(req_id, language=None)
-                st.caption("ID Permintaan (Header)")
+                st.caption("Request ID (Header)")
 
 
 # =============================================================================
@@ -236,13 +236,13 @@ with st.sidebar:
 
 if selected_page == "Dashboard":
     render_dashboard()
-elif selected_page == "Pencocokan":
+elif selected_page == "Class Mappings":
     render_mappings()
 elif selected_page == "Import TKPI":
     render_tkpi_import()
-elif selected_page == "Ekspor Dataset":
+elif selected_page == "Dataset Export":
     render_export()
 
 # Footer
 st.divider()
-st.caption("RASA-ID Panel Admin · v1.0")
+st.caption("RASA-ID Admin Panel · v1.0")
