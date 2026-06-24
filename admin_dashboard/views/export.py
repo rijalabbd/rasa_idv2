@@ -130,7 +130,7 @@ def do_yolo_raw_export(
     if end_date:
         endpoint += f"&end_date={end_date}"
 
-    with st.spinner("Generating YOLO Raw Detections dataset..."):
+    with st.spinner("Membuat dataset YOLO Raw Detections..."):
         content, status, headers, _ = api_request("GET", endpoint, timeout=180)
 
     req_id = st.session_state.get("last_request_id", "")
@@ -142,7 +142,7 @@ def do_yolo_raw_export(
             exported = headers.get("x-export-count") or headers.get("X-Export-Count") or "0"
             
         if exported == "0" or not content:
-            st.session_state[f"{key}_msg"] = "No data available for export."
+            st.session_state[f"{key}_msg"] = "Tidak ada data untuk diekspor."
             return
 
         st.session_state[f"{key}_zip"] = content
@@ -155,21 +155,21 @@ def do_yolo_raw_export(
                 if headers:
                     skipped = headers.get("x-skip-count") or headers.get("X-Skip-Count") or "0"
                 st.session_state[f"{key}_msg"] = (
-                    f"ZIP successfully generated ({len(content):,} bytes) — "
-                    f"{exported} items exported, {skipped} skipped"
+                    f"ZIP berhasil dibuat ({len(content):,} bytes) — "
+                    f"{exported} item diekspor, {skipped} dilewati"
                 )
         except Exception as e:
-            st.session_state[f"{key}_msg"] = f"ZIP generated but invalid: {e}{ref}"
+            st.session_state[f"{key}_msg"] = f"ZIP dibuat tetapi tidak valid: {e}{ref}"
     else:
         err_detail = ""
         if isinstance(content, dict):
             err_detail = f" — {content.get('code', '')}: {content.get('detail', '')}"
-        st.session_state[f"{key}_err"] = f"Export failed with status code {status}{err_detail}{ref}"
+        st.session_state[f"{key}_err"] = f"Ekspor gagal dengan kode status {status}{err_detail}{ref}"
 
 
 def _render_zip_contents(files: list[str], key_prefix: str):
     """Render ZIP file list with file-type icons."""
-    with st.expander(f"ZIP Content Preview ({len(files)} files)", expanded=False):
+    with st.expander(f"Pratinjau Isi ZIP ({len(files)} file)", expanded=False):
         for f in files:
             if "/images/" in f:
                 icon = icon_md("image", f"`{f}`", size=14)
@@ -183,20 +183,20 @@ def _render_zip_contents(files: list[str], key_prefix: str):
 def render_export():
     """Render the Export Dataset view."""
 
-    st.markdown(h1("package", "Export Dataset & Activity Logs"), unsafe_allow_html=True)
+    st.markdown(h1("package", "Ekspor Dataset & Log Aktivitas"), unsafe_allow_html=True)
     st.divider()
 
     summary = get_export_summary()
 
     # ── Section 1: Combined JSONL export ─────────────────────────────────
-    st.markdown(h2("file-text", "Combined Activity Log Export (JSONL)"), unsafe_allow_html=True)
-    st.caption("Exports log files feedback.jsonl and class_requests.jsonl inside a single ZIP package (excluding image files).")
+    st.markdown(h2("file-text", "Ekspor Gabungan Log Aktivitas (JSONL)"), unsafe_allow_html=True)
+    st.caption("Mengekspor file log feedback.jsonl and class_requests.jsonl ke dalam satu paket ZIP (tidak termasuk file gambar).")
 
     c1, c2 = st.columns([1.2, 1])
     with c1:
-        only_new_combined = st.toggle("Export only new data (unexported)", value=True, key="only_new_combined")
+        only_new_combined = st.toggle("Ekspor hanya data baru (belum diekspor)", value=True, key="only_new_combined")
     with c2:
-        if st.button("Reset Last Combined Export Status", key="undo_combined"):
+        if st.button("Reset Status Ekspor Gabungan Terakhir", key="undo_combined"):
             # Combined affects both feedback and class_request, we use 'combined' type
             if do_undo_export("feedback"): # Combined currently marks logs as individual types
                 get_export_summary() # Refresh
@@ -205,7 +205,7 @@ def render_export():
     btn_col, result_col = st.columns([1.2, 2])
 
     with btn_col:
-        if st.button("Process & Generate Combined ZIP", key="generate_zip_btn", type="secondary", use_container_width=True):
+        if st.button("Proses & Buat ZIP Gabungan", key="generate_zip_btn", type="secondary", use_container_width=True):
             do_generate_export("Combined", only_new_combined)
             st.rerun()
 
@@ -217,7 +217,7 @@ def render_export():
 
     if st.session_state.export_zip_bytes and st.session_state.export_filename:
         st.download_button(
-            label=f"Download {st.session_state.export_filename}",
+            label=f"Unduh {st.session_state.export_filename}",
             data=st.session_state.export_zip_bytes,
             file_name=st.session_state.export_filename,
             mime="application/zip",
@@ -230,23 +230,23 @@ def render_export():
 
     # ── Section 2: YOLO Feedback Dataset ─────────────────────────────────
     fb_sum = summary.get("feedback", {})
-    st.markdown(h2("tag", "YOLO Feedback Dataset (Food Correction)"), unsafe_allow_html=True)
+    st.markdown(h2("tag", "YOLO Feedback Dataset (Koreksi Makanan)"), unsafe_allow_html=True)
     fb_m1, fb_m2, fb_m3 = st.columns(3)
-    fb_m1.metric("Total Submissions", fb_sum.get('total', 0))
-    fb_m2.metric("Pending Export", fb_sum.get('new', 0), delta=f"{fb_sum.get('new', 0)} new" if fb_sum.get('new', 0) > 0 else None)
-    fb_m3.metric("Last Export", fb_sum.get('last_exported_at', 'Never')[:10] if fb_sum.get('last_exported_at') else 'Never')
+    fb_m1.metric("Total Feedback", fb_sum.get('total', 0))
+    fb_m2.metric("Belum Diekspor", fb_sum.get('new', 0), delta=f"{fb_sum.get('new', 0)} baru" if fb_sum.get('new', 0) > 0 else None)
+    fb_m3.metric("Ekspor Terakhir", fb_sum.get('last_exported_at', 'Belum Pernah')[:10] if fb_sum.get('last_exported_at') else 'Belum Pernah')
 
     fb_t1, fb_t2 = st.columns([1.2, 1])
     with fb_t1:
-        only_new_fb = st.toggle("Export only new feedback data", value=True, key="only_new_fb")
+        only_new_fb = st.toggle("Ekspor hanya data feedback baru", value=True, key="only_new_fb")
     with fb_t2:
-        if st.button("Reset Last Feedback Export Status", key="undo_fb"):
+        if st.button("Reset Status Ekspor Feedback Terakhir", key="undo_fb"):
             if do_undo_export("feedback"):
                 st.rerun()
 
     fb_col1, fb_col2 = st.columns([1.2, 2])
     with fb_col1:
-        if st.button("Process Feedback Dataset", key="yolo_fb_btn", type="primary", use_container_width=True):
+        if st.button("Proses Dataset Feedback", key="yolo_fb_btn", type="primary", use_container_width=True):
             do_yolo_export("feedback", only_new_fb)
             st.rerun()
 
@@ -258,7 +258,7 @@ def render_export():
 
     if st.session_state.get("yolo_feedback_zip"):
         st.download_button(
-            label="Download feedback_dataset.zip",
+            label="Unduh feedback_dataset.zip",
             data=st.session_state.yolo_feedback_zip,
             file_name="feedback_dataset.zip",
             mime="application/zip",
@@ -274,21 +274,21 @@ def render_export():
     cr_sum = summary.get("class_request", {})
     st.markdown(h2("tag", "YOLO Class Request Dataset"), unsafe_allow_html=True)
     cr_m1, cr_m2, cr_m3 = st.columns(3)
-    cr_m1.metric("Total Requests", cr_sum.get('total', 0))
-    cr_m2.metric("Pending Export", cr_sum.get('new', 0), delta=f"{cr_sum.get('new', 0)} new" if cr_sum.get('new', 0) > 0 else None)
-    cr_m3.metric("Last Export", cr_sum.get('last_exported_at', 'Never')[:10] if cr_sum.get('last_exported_at') else 'Never')
+    cr_m1.metric("Total Usulan", cr_sum.get('total', 0))
+    cr_m2.metric("Belum Diekspor", cr_sum.get('new', 0), delta=f"{cr_sum.get('new', 0)} baru" if cr_sum.get('new', 0) > 0 else None)
+    cr_m3.metric("Ekspor Terakhir", cr_sum.get('last_exported_at', 'Belum Pernah')[:10] if cr_sum.get('last_exported_at') else 'Belum Pernah')
 
     cr_t1, cr_t2 = st.columns([1.2, 1])
     with cr_t1:
-        only_new_cr = st.toggle("Export only new request data", value=True, key="only_new_cr")
+        only_new_cr = st.toggle("Ekspor hanya data usulan baru", value=True, key="only_new_cr")
     with cr_t2:
-        if st.button("Reset Last Class Request Export Status", key="undo_cr"):
+        if st.button("Reset Status Ekspor Class Request Terakhir", key="undo_cr"):
             if do_undo_export("class_request"):
                 st.rerun()
 
     cr_col1, cr_col2 = st.columns([1.2, 2])
     with cr_col1:
-        if st.button("Process Class Request Dataset", key="yolo_cr_btn", type="primary", use_container_width=True):
+        if st.button("Proses Dataset Class Request", key="yolo_cr_btn", type="primary", use_container_width=True):
             do_yolo_export("class-requests", only_new_cr)
             st.rerun()
 
@@ -300,7 +300,7 @@ def render_export():
 
     if st.session_state.get("yolo_class-requests_zip"):
         st.download_button(
-            label="Download class_requests_dataset.zip",
+            label="Unduh class_requests_dataset.zip",
             data=st.session_state["yolo_class-requests_zip"],
             file_name="class_requests_dataset.zip",
             mime="application/zip",
@@ -316,21 +316,21 @@ def render_export():
     md_sum = summary.get("missed_detection", {})
     st.markdown(h2("eye", "YOLO Missed Detection Dataset"), unsafe_allow_html=True)
     md_m1, md_m2, md_m3 = st.columns(3)
-    md_m1.metric("Total Missed", md_sum.get('total', 0))
-    md_m2.metric("Pending Export", md_sum.get('new', 0), delta=f"{md_sum.get('new', 0)} new" if md_sum.get('new', 0) > 0 else None)
-    md_m3.metric("Last Export", md_sum.get('last_exported_at', 'Never')[:10] if md_sum.get('last_exported_at') else 'Never')
+    md_m1.metric("Total Terlewat", md_sum.get('total', 0))
+    md_m2.metric("Belum Diekspor", md_sum.get('new', 0), delta=f"{md_sum.get('new', 0)} baru" if md_sum.get('new', 0) > 0 else None)
+    md_m3.metric("Ekspor Terakhir", md_sum.get('last_exported_at', 'Belum Pernah')[:10] if md_sum.get('last_exported_at') else 'Belum Pernah')
 
     md_t1, md_t2 = st.columns([1.2, 1])
     with md_t1:
-        only_new_md = st.toggle("Export only new missed detections", value=True, key="only_new_md")
+        only_new_md = st.toggle("Ekspor hanya data missed detections baru", value=True, key="only_new_md")
     with md_t2:
-        if st.button("Reset Last Missed Export Status", key="undo_md"):
+        if st.button("Reset Status Ekspor Missed Detection Terakhir", key="undo_md"):
             if do_undo_export("missed_detection"):
                 st.rerun()
 
     md_col1, md_col2 = st.columns([1.2, 2])
     with md_col1:
-        if st.button("Process Missed Detection Dataset", key="yolo_md_btn", type="primary", use_container_width=True):
+        if st.button("Proses Dataset Missed Detection", key="yolo_md_btn", type="primary", use_container_width=True):
             do_yolo_export("missed", only_new_md)
             st.rerun()
 
@@ -342,7 +342,7 @@ def render_export():
 
     if st.session_state.get("yolo_missed_zip"):
         st.download_button(
-            label="Download missed_detections_dataset.zip",
+            label="Unduh missed_detections_dataset.zip",
             data=st.session_state.get("yolo_missed_zip"),
             file_name="missed_detections_dataset.zip",
             mime="application/zip",
@@ -358,23 +358,23 @@ def render_export():
     raw_sum = summary.get("raw_detection", {})
     st.markdown(h2("image", "YOLO Raw Detections Dataset (Dataset Deteksi Otomatis)"), unsafe_allow_html=True)
     raw_m1, raw_m2, raw_m3 = st.columns(3)
-    raw_m1.metric("Total Detections", raw_sum.get('total', 0))
-    raw_m2.metric("Pending Export", raw_sum.get('new', 0), delta=f"{raw_sum.get('new', 0)} new" if raw_sum.get('new', 0) > 0 else None)
-    raw_m3.metric("Last Export", raw_sum.get('last_exported_at', 'Never')[:10] if raw_sum.get('last_exported_at') else 'Never')
+    raw_m1.metric("Total Deteksi", raw_sum.get('total', 0))
+    raw_m2.metric("Belum Diekspor", raw_sum.get('new', 0), delta=f"{raw_sum.get('new', 0)} baru" if raw_sum.get('new', 0) > 0 else None)
+    raw_m3.metric("Ekspor Terakhir", raw_sum.get('last_exported_at', 'Belum Pernah')[:10] if raw_sum.get('last_exported_at') else 'Belum Pernah')
 
     # Advanced options layout
-    st.markdown("##### ⚙️ Advanced Export Filters")
+    st.markdown("##### ⚙️ Filter Ekspor Tingkat Lanjut")
     set1, set2 = st.columns(2)
     with set1:
-        only_new_raw = st.toggle("Export only new raw detections", value=True, key="only_new_raw")
-        include_bg_raw = st.toggle("Include images with no detections (Background)", value=True, key="include_bg_raw")
+        only_new_raw = st.toggle("Ekspor hanya data deteksi baru", value=True, key="only_new_raw")
+        include_bg_raw = st.toggle("Sertakan gambar tanpa deteksi (Background)", value=True, key="include_bg_raw")
     with set2:
-        min_conf_raw = st.slider("Minimum Confidence Score", min_value=0.0, max_value=1.0, value=0.50, step=0.05, key="min_conf_raw")
+        min_conf_raw = st.slider("Batas Minimal Confidence Score", min_value=0.0, max_value=1.0, value=0.50, step=0.05, key="min_conf_raw")
         
         # Date Preset Dropdown
         import datetime as dt_lib
         preset = st.selectbox(
-            "Filter by Date Range",
+            "Filter Rentang Tanggal",
             options=["All Time (Semua Waktu)", "Last 30 Days (1 Bulan)", "Last 60 Days (2 Bulan)", "Custom (Pilih Manual)"],
             index=0,
             key="raw_date_preset"
@@ -384,7 +384,7 @@ def render_export():
         end_date_str = None
         
         if preset == "Custom (Pilih Manual)":
-            date_range = st.date_input("Select Custom Date Range", value=(), key="date_range_raw")
+            date_range = st.date_input("Pilih Rentang Tanggal Kustom", value=(), key="date_range_raw")
             if len(date_range) == 2:
                 start_date_str = date_range[0].strftime("%Y-%m-%d")
                 end_date_str = date_range[1].strftime("%Y-%m-%d")
@@ -403,13 +403,13 @@ def render_export():
     with raw_t1:
         pass # placeholder to keep layout consistent
     with raw_t2:
-        if st.button("Reset Last Raw Export Status", key="undo_raw"):
+        if st.button("Reset Status Ekspor Deteksi Otomatis Terakhir", key="undo_raw"):
             if do_undo_export("raw_detection"):
                 st.rerun()
 
     raw_col1, raw_col2 = st.columns([1.2, 2])
     with raw_col1:
-        if st.button("Process Raw Detections", key="yolo_raw_btn", type="primary", use_container_width=True):
+        if st.button("Proses Deteksi Otomatis", key="yolo_raw_btn", type="primary", use_container_width=True):
             do_yolo_raw_export(
                 only_new=only_new_raw,
                 min_confidence=min_conf_raw,
@@ -427,7 +427,7 @@ def render_export():
 
     if st.session_state.get("yolo_raw_zip"):
         st.download_button(
-            label="Download raw_detections_dataset.zip",
+            label="Unduh raw_detections_dataset.zip",
             data=st.session_state.get("yolo_raw_zip"),
             file_name="raw_detections_dataset.zip",
             mime="application/zip",

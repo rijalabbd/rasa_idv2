@@ -39,26 +39,26 @@ def save_mapping(yolo_label: str, tkpi_food_id: int, ui_status: str, ui_note: st
         "ui_status": ui_status,
         "ui_note": ui_note if ui_note.strip() else None
     }
-    with st.spinner("Saving class mapping..."):
+    with st.spinner("Menyimpan pemetaan kelas..."):
         data, status, _, _ = api_request("POST", "/admin/mappings", json=payload)
     if status == 200:
-        st.toast(f"Successfully saved class mapping: {yolo_label}")
+        st.toast(f"Berhasil menyimpan pemetaan kelas: {yolo_label}")
         fetch_mappings(st.session_state.get("mapping_search_q", ""))
         return True
     else:
-        st.toast("Failed to save class mapping.")
+        st.toast("Gagal menyimpan pemetaan kelas.")
         return False
 
 
 def delete_mapping_api(mapping_id: int, label: str):
     """Delete a mapping."""
-    with st.spinner(f"Deleting class mapping '{label}'..."):
+    with st.spinner(f"Menghapus pemetaan kelas '{label}'..."):
         _, status, _, _ = api_request("DELETE", f"/admin/mappings/{mapping_id}")
     if status == 200:
-        st.toast(f"Class mapping '{label}' successfully deleted.")
+        st.toast(f"Pemetaan kelas '{label}' berhasil dihapus.")
         fetch_mappings(st.session_state.get("mapping_search_q", ""))
     else:
-        st.toast(f"Failed to delete class mapping '{label}'. HTTP {status}")
+        st.toast(f"Gagal menghapus pemetaan kelas '{label}'. HTTP {status}")
 
 
 # =============================================================================
@@ -127,14 +127,14 @@ def _render_list_tab():
     search_col, refresh_col = st.columns([4, 1])
     with search_col:
         q_input = st.text_input(
-            "Search YOLO labels",
+            "Cari label YOLO",
             value=st.session_state.mapping_search_q,
-            placeholder="Search YOLO label (e.g. nasi_goreng)...",
+            placeholder="Cari label YOLO (misal: nasi_putih)...",
             label_visibility="collapsed",
             key="mapping_search_input"
         )
     with refresh_col:
-        if st.button("Refresh", use_container_width=True):
+        if st.button("Perbarui", use_container_width=True):
             st.session_state.mapping_search_q = q_input
             fetch_mappings(q_input)
             st.rerun()
@@ -146,24 +146,24 @@ def _render_list_tab():
         fetch_mappings()
 
     if st.session_state.mapping_list_error:
-        st.error(f"Failed to load class mappings: {st.session_state.mapping_list_error}")
+        st.error(f"Gagal memuat pemetaan kelas: {st.session_state.mapping_list_error}")
         return
 
     items = (st.session_state.mapping_list or {}).get("items", [])
 
     if not items:
-        st.info("Mappings list is empty. Click 'Add New Mapping' to get started.")
+        st.info("Daftar pemetaan masih kosong. Klik 'Tambah Pemetaan Baru' untuk memulai.")
         return
 
-    st.caption(f"Displaying {len(items)} Class Mappings")
+    st.caption(f"Menampilkan {len(items)} Pemetaan Kelas")
 
     # --- Header row ---
     col_h1, col_h2, col_h3, col_h4, col_h5 = st.columns([2, 3, 1.5, 2.5, 1.5])
-    col_h1.markdown("**YOLO Label**")
-    col_h2.markdown("**TKPI Food Name**")
-    col_h3.markdown("**Match Type**")
-    col_h4.markdown("**Last Updated**")
-    col_h5.markdown("**Actions**")
+    col_h1.markdown("**Label YOLO**")
+    col_h2.markdown("**Nama Makanan TKPI**")
+    col_h3.markdown("**Tipe Pencocokan**")
+    col_h4.markdown("**Terakhir Diperbarui**")
+    col_h5.markdown("**Tindakan**")
     st.divider()
 
     # --- Data rows ---
@@ -173,16 +173,16 @@ def _render_list_tab():
         if is_confirm_delete:
             # Confirmation row
             st.warning(
-                f"Are you sure you want to delete the mapping for YOLO label **{item['yolo_label']}**? This action cannot be undone."
+                f"Apakah Anda yakin ingin menghapus pemetaan untuk label YOLO **{item['yolo_label']}**? Tindakan ini tidak dapat dibatalkan."
             )
             yes_col, no_col, _ = st.columns([1.5, 1, 4])
             with yes_col:
-                if st.button("Yes, Delete Permanently", key=f"confirm_yes_{item['id']}", type="primary"):
+                if st.button("Ya, Hapus Permanen", key=f"confirm_yes_{item['id']}", type="primary"):
                     delete_mapping_api(item["id"], item["yolo_label"])
                     st.session_state.confirm_delete_id = None
                     st.rerun()
             with no_col:
-                if st.button("Cancel", key=f"confirm_no_{item['id']}"):
+                if st.button("Batal", key=f"confirm_no_{item['id']}"):
                     st.session_state.confirm_delete_id = None
                     st.rerun()
         else:
@@ -194,12 +194,12 @@ def _render_list_tab():
             status_val = item.get("ui_status", "")
             if status_val in ["COCOK", "EXACT"]:
                 c3.markdown(
-                    icon_md("check-circle", "Exact Match", size=14, color="#10b981"),
+                    icon_md("check-circle", "Cocok Persis", size=14, color="#10b981"),
                     unsafe_allow_html=True
                 )
             else:
                 c3.markdown(
-                    icon_md("alert-triangle", "Close Match", size=14, color="#f97316"),
+                    icon_md("alert-triangle", "Mendekati", size=14, color="#f97316"),
                     unsafe_allow_html=True
                 )
 
@@ -208,11 +208,11 @@ def _render_list_tab():
             with c5:
                 action_a, action_b = st.columns(2)
                 with action_a:
-                    if st.button("Edit", key=f"edit_{item['id']}", use_container_width=True):
+                    if st.button("Ubah", key=f"edit_{item['id']}", use_container_width=True):
                         _load_form_from_mapping(item)
                         st.rerun()
                 with action_b:
-                    if st.button("Delete", key=f"del_{item['id']}", use_container_width=True):
+                    if st.button("Hapus", key=f"del_{item['id']}", use_container_width=True):
                         st.session_state.confirm_delete_id = item["id"]
                         st.rerun()
 
@@ -226,17 +226,17 @@ def _render_form_tab():
     # --- Form header ---
     if is_edit:
         st.markdown(
-            labeled_section("pencil", f"Edit Class Mapping for Label: {st.session_state.mf_edit_label}"),
+            labeled_section("pencil", f"Ubah Pemetaan Kelas untuk Label: {st.session_state.mf_edit_label}"),
             unsafe_allow_html=True
         )
         st.markdown(
             icon_md("map-pin",
-                    f"Selected TKPI Food: **{st.session_state.mf_tkpi_name}** (ID: {st.session_state.mf_tkpi_id})",
+                    f"Makanan TKPI Terpilih: **{st.session_state.mf_tkpi_name}** (ID: {st.session_state.mf_tkpi_id})",
                     size=14),
             unsafe_allow_html=True
         )
     else:
-        st.caption("Fill in the form below to map a new YOLO model label to TKPI food nutrition data.")
+        st.caption("Isi formulir di bawah ini untuk memetakan label model YOLO baru ke data kandungan gizi makanan TKPI.")
 
     form_col1, form_col2 = st.columns(2)
 
@@ -244,47 +244,47 @@ def _render_form_tab():
     with form_col1:
         if is_edit:
             st.text_input(
-                "YOLO Label Name",
+                "Nama Label YOLO",
                 value=st.session_state.mf_edit_label,
                 disabled=True,
-                help="Label name cannot be modified in edit mode"
+                help="Nama label tidak dapat diubah dalam mode ubah"
             )
         else:
             st.session_state.mf_yolo_label = st.text_input(
-                "YOLO Label Name",
+                "Nama Label YOLO",
                 value=st.session_state.mf_yolo_label,
-                placeholder="e.g. nasi_goreng",
-                help="Label output from the YOLO model (lowercase with underscores, e.g. nasi_putih)"
+                placeholder="misal: nasi_goreng",
+                help="Nama label keluaran dari model YOLO (huruf kecil dengan garis bawah, misal: nasi_putih)"
             )
 
         status_options = ["COCOK", "MENDEKATI"]
-        status_labels = ["Exact Match", "Close Match"]
+        status_labels = ["Cocok Persis (Exact Match)", "Mendekati (Close Match)"]
         cur_idx = status_options.index(st.session_state.mf_status) if st.session_state.mf_status in status_options else 0
         selected_status_label = st.radio(
-            "Match Accuracy",
+            "Akurasi Pencocokan",
             options=status_labels,
             index=cur_idx,
             horizontal=True,
-            help="Exact: Identical nutritional values. Close: Approximate values (e.g. cooked dish mapped to raw ingredients)."
+            help="Persis: Nilai gizi identik. Mendekati: Nilai estimasi (misal: masakan olahan dipetakan ke bahan mentahnya)."
         )
         st.session_state.mf_status = status_options[status_labels.index(selected_status_label)]
 
         default_note = st.session_state.mf_note
-        if selected_status_label == "Close Match" and not default_note:
+        if selected_status_label == "Mendekati (Close Match)" and not default_note:
             default_note = "Nilai gizi adalah estimasi rata-rata porsi olahan."
 
         st.session_state.mf_note = st.text_input(
-            "Optional Note",
+            "Catatan Opsional",
             value=default_note,
-            help="Note displayed to end-users on the client web when nutrition is an approximation."
+            help="Catatan yang ditampilkan kepada pengguna pada aplikasi web jika nilai gizi berupa estimasi."
         )
 
     # --- Kolom kanan: TKPI Search ---
     with form_col2:
         tkpi_search_q = st.text_input(
-            "Search TKPI Foods" + (" (to replace)" if is_edit else ""),
+            "Cari Makanan TKPI" + (" (untuk mengganti)" if is_edit else ""),
             value=st.session_state.mf_tkpi_search_q,
-            placeholder="Search food name...",
+            placeholder="Cari nama makanan...",
             key="mf_tkpi_search_input"
         )
         st.session_state.mf_tkpi_search_q = tkpi_search_q
@@ -298,7 +298,7 @@ def _render_form_tab():
                 for t in st.session_state.mf_tkpi_results
             }
             selected_tkpi_option = st.selectbox(
-                "Select TKPI Search Result",
+                "Pilih Hasil Pencarian TKPI",
                 options=list(tkpi_options.keys()),
                 key="mf_tkpi_select"
             )
@@ -307,12 +307,12 @@ def _render_form_tab():
                 st.session_state.mf_tkpi_id = selected_t["id"]
                 st.session_state.mf_tkpi_name = selected_t["name"]
         elif not is_edit:
-            st.caption("Type at least 2 characters to search the TKPI database.")
+            st.caption("Ketik minimal 2 karakter untuk mencari di database TKPI.")
 
         # Show currently selected TKPI
         if st.session_state.mf_tkpi_id:
             st.success(
-                f"Selected TKPI Food: **{st.session_state.mf_tkpi_name}** (ID: {st.session_state.mf_tkpi_id})"
+                f"Makanan TKPI Terpilih: **{st.session_state.mf_tkpi_name}** (ID: {st.session_state.mf_tkpi_id})"
             )
 
     st.divider()
@@ -321,13 +321,13 @@ def _render_form_tab():
     save_col, cancel_col, _ = st.columns([1.5, 1, 3])
 
     with save_col:
-        save_label = "Save Changes" if is_edit else "Save Mapping"
+        save_label = "Simpan Perubahan" if is_edit else "Simpan Pemetaan"
         if st.button(save_label, type="primary", use_container_width=True):
             label_to_save = st.session_state.mf_edit_label if is_edit else st.session_state.mf_yolo_label
             if not label_to_save or not label_to_save.strip():
-                st.error("YOLO label is required.")
+                st.error("Label YOLO wajib diisi.")
             elif not st.session_state.mf_tkpi_id:
-                st.error("Please search and select a TKPI food first.")
+                st.error("Silakan cari dan pilih makanan TKPI terlebih dahulu.")
             else:
                 ok = save_mapping(
                     label_to_save,
@@ -340,7 +340,7 @@ def _render_form_tab():
                     st.rerun()
 
     with cancel_col:
-        if st.button("Cancel", use_container_width=True):
+        if st.button("Batal", use_container_width=True):
             _clear_form()
             st.rerun()
 
@@ -353,20 +353,20 @@ def render_mappings():
     """Render the Mappings Management view."""
     _ensure_form_state()
 
-    st.markdown(h1("link", "Class Mappings (YOLO ↔ TKPI)"), unsafe_allow_html=True)
-    st.caption("Manage mapping of YOLO model labels to TKPI food nutrition composition data.")
+    st.markdown(h1("link", "Pemetaan Kelas (YOLO ↔ TKPI)"), unsafe_allow_html=True)
+    st.caption("Kelola pemetaan label model YOLO ke data komposisi kandungan gizi makanan TKPI.")
     st.divider()
 
     if st.session_state.show_form:
         # ── Form view (Add / Edit) ──────────────────────────────────────────
         is_edit = st.session_state.mf_edit_id is not None
-        mode_label = "Edit Class Mapping" if is_edit else "Add New Mapping"
+        mode_label = "Ubah Pemetaan Kelas" if is_edit else "Tambah Pemetaan Baru"
         icon_name = "pencil" if is_edit else "plus"
         st.markdown(h2(icon_name, mode_label), unsafe_allow_html=True)
         _render_form_tab()
     else:
         # ── List view ───────────────────────────────────────────────────────
-        if st.button("Add New Mapping", type="primary"):
+        if st.button("Tambah Pemetaan Baru", type="primary"):
             _clear_form()
             st.session_state.show_form = True
             st.rerun()
