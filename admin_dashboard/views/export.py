@@ -108,6 +108,65 @@ def do_yolo_export(kind: str, only_new: bool = True):
         st.session_state[f"{key}_err"] = f"Export failed with status code {status}{err_detail}{ref}"
 
 
+def do_yolo_raw_export(
+    only_new: bool = True,
+    min_confidence: float = 0.50,
+    include_background: bool = True,
+    start_date = None,
+    end_date = None
+):
+    """Generate YOLO raw detections dataset ZIP with advanced filters."""
+    key = "yolo_raw"
+    st.session_state[f"{key}_zip"] = None
+    st.session_state[f"{key}_msg"] = None
+    st.session_state[f"{key}_err"] = None
+    st.session_state[f"{key}_files"] = []
+
+    mode = "new" if only_new else "all"
+    
+    endpoint = f"/admin/export/yolo/raw?mode={mode}&min_confidence={min_confidence}&include_background={str(include_background).lower()}"
+    if start_date:
+        endpoint += f"&start_date={start_date}"
+    if end_date:
+        endpoint += f"&end_date={end_date}"
+
+    with st.spinner("Generating YOLO Raw Detections dataset..."):
+        content, status, headers, _ = api_request("GET", endpoint, timeout=180)
+
+    req_id = st.session_state.get("last_request_id", "")
+    ref = f" (Ref: {req_id})" if req_id else ""
+
+    if status == 200:
+        exported = "0"
+        if headers:
+            exported = headers.get("x-export-count") or headers.get("X-Export-Count") or "0"
+            
+        if exported == "0" or not content:
+            st.session_state[f"{key}_msg"] = "No data available for export."
+            return
+
+        st.session_state[f"{key}_zip"] = content
+
+        try:
+            with zipfile.ZipFile(io.BytesIO(content)) as z:
+                namelist = z.namelist()
+                st.session_state[f"{key}_files"] = namelist
+                skipped = "0"
+                if headers:
+                    skipped = headers.get("x-skip-count") or headers.get("X-Skip-Count") or "0"
+                st.session_state[f"{key}_msg"] = (
+                    f"ZIP successfully generated ({len(content):,} bytes) — "
+                    f"{exported} items exported, {skipped} skipped"
+                )
+        except Exception as e:
+            st.session_state[f"{key}_msg"] = f"ZIP generated but invalid: {e}{ref}"
+    else:
+        err_detail = ""
+        if isinstance(content, dict):
+            err_detail = f" — {content.get('code', '')}: {content.get('detail', '')}"
+        st.session_state[f"{key}_err"] = f"Export failed with status code {status}{err_detail}{ref}"
+
+
 def _render_zip_contents(files: list[str], key_prefix: str):
     """Render ZIP file list with file-type icons."""
     with st.expander(f"ZIP Content Preview ({len(files)} files)", expanded=False):
@@ -292,3 +351,70 @@ def render_export():
         files = st.session_state.get("yolo_missed_files", [])
         if files:
             _render_zip_contents(files, "missed")
+
+    st.divider()
+
+    # ── Section 5: YOLO Raw Detections Dataset ────────────────────────
+    raw_sum = summary.get("raw_detection", {})
+    st.markdown(h2("image", "YOLO Raw Detections Dataset (Dataset Deteksi Otomatis)"), unsafe_allow_html=True)
+    raw_m1, raw_m2, raw_m3 = st.columns(3)
+    raw_m1.metric("Total Detections", raw_sum.get('total', 0))
+    raw_m2.metric("Pending Export", raw_sum.get('new', 0), delta=f"{raw_sum.get('new', 0)} new" if raw_sum.get('new', 0) > 0 else None)
+    raw_m3.metric("Last Export", raw_sum.get('last_exported_at', 'Never')[:10] if raw_sum.get('last_exported_at') else 'Never')
+
+    # Advanced options layout
+    st.markdown("##### ⚙️ Advanced Export Filters")
+    set1, set2 = st.columns(2)
+    with set1:
+        only_new_raw = st.toggle("Export only new raw detections", value=True, key="only_new_raw")
+        include_bg_raw = st.toggle("Include images with no detections (Background)", value=True, key="include_bg_raw")
+    with set2:
+        min_conf_raw = st.slider("Minimum Confidence Score", min_value=0.0, max_value=1.0, value=0.50, step=0.05, key="min_conf_raw")
+        
+        # Date range input
+        date_range = st.date_input("Filter by Date Range", value=(), key="date_range_raw")
+        start_date_str = None
+        end_date_str = None
+        if len(date_range) == 2:
+            start_date_str = date_range[0].strftime("%Y-%m-%d")
+            end_date_str = date_range[1].strftime("%Y-%m-%d")
+        elif len(date_range) == 1:
+            start_date_str = date_range[0].strftime("%Y-%m-%d")
+
+    raw_t1, raw_t2 = st.columns([1.2, 1])
+    with raw_t1:
+        pass # placeholder to keep layout consistent
+    with raw_t2:
+        if st.button("Reset Last Raw Export Status", key="undo_raw"):
+            if do_undo_export("raw_detection"):
+                st.rerun()
+
+    raw_col1, raw_col2 = st.columns([1.2, 2])
+    with raw_col1:
+        if st.button("Process Raw Detections", key="yolo_raw_btn", type="primary", use_container_width=True):
+            do_yolo_raw_export(
+                only_new=only_new_raw,
+                min_confidence=min_conf_raw,
+                include_background=include_bg_raw,
+                start_date=start_date_str,
+                end_date=end_date_str
+            )
+            st.rerun()
+
+    with raw_col2:
+        if st.session_state.get("yolo_raw_msg"):
+            st.success(st.session_state.get('yolo_raw_msg'))
+        if st.session_state.get("yolo_raw_err"):
+            st.error(st.session_state.get('yolo_raw_err'))
+
+    if st.session_state.get("yolo_raw_zip"):
+        st.download_button(
+            label="Download raw_detections_dataset.zip",
+            data=st.session_state.get("yolo_raw_zip"),
+            file_name="raw_detections_dataset.zip",
+            mime="application/zip",
+            key="dl_yolo_raw"
+        )
+        files = st.session_state.get("yolo_raw_files", [])
+        if files:
+            _render_zip_contents(files, "raw")

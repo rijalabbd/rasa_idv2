@@ -107,6 +107,48 @@ async def export_yolo_missed_detections(
     )
 
 
+from app.services.yolo_raw_export_service import build_yolo_raw_zip
+
+@router.get("/export/yolo/raw")
+async def export_yolo_raw_detections(
+    request: Request,
+    mode: str = "new",
+    min_confidence: float = 0.50,
+    include_background: bool = True,
+    start_date: str = None,
+    end_date: str = None,
+    db: Session = Depends(get_db),
+    admin_key: str = Depends(get_admin_api_key),
+):
+    """Export raw detection data as YOLO-ready dataset ZIP."""
+    audit = AuditService(db)
+    audit.log_action(f"ADMIN_EXPORT_YOLO_RAW_MODE_{mode.upper()}", request, admin_key)
+
+    only_new = (mode == "new")
+    zip_buffer, exported, skipped, batch_id = build_yolo_raw_zip(
+        db,
+        only_new=only_new,
+        min_confidence=min_confidence,
+        include_background=include_background,
+        start_date=start_date,
+        end_date=end_date
+    )
+
+    ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+    filename = f"raw_detections_dataset_{ts}.zip"
+
+    return StreamingResponse(
+        zip_buffer,
+        media_type="application/zip",
+        headers={
+            "Content-Disposition": f"attachment; filename={filename}",
+            "X-Export-Count": str(exported),
+            "X-Skip-Count": str(skipped),
+            "X-Export-Batch-ID": batch_id,
+        },
+    )
+
+
 @router.get("/export/summary")
 async def get_export_summary_api(
     db: Session = Depends(get_db),

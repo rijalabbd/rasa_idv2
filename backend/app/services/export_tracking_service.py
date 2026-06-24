@@ -19,17 +19,19 @@ from app.models.export_log import ExportLog
 from app.models.feedback import Feedback
 from app.models.class_request import ClassRequest
 from app.models.missed_detection import MissedDetection
+from app.models.analysis import Analysis
 
 logger = logging.getLogger(__name__)
 
 # Valid source types
-SOURCE_TYPES = ("feedback", "class_request", "missed_detection", "combined")
+SOURCE_TYPES = ("feedback", "class_request", "missed_detection", "combined", "raw_detection")
 
 # Map source_type -> model class + ID column
 _SOURCE_MAP = {
     "feedback": (Feedback, Feedback.id),
     "class_request": (ClassRequest, ClassRequest.id),
     "missed_detection": (MissedDetection, MissedDetection.id),
+    "raw_detection": (Analysis, Analysis.id),
 }
 
 
