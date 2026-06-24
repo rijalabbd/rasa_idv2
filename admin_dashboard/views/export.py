@@ -371,15 +371,33 @@ def render_export():
     with set2:
         min_conf_raw = st.slider("Minimum Confidence Score", min_value=0.0, max_value=1.0, value=0.50, step=0.05, key="min_conf_raw")
         
-        # Date range input
-        date_range = st.date_input("Filter by Date Range", value=(), key="date_range_raw")
+        # Date Preset Dropdown
+        import datetime as dt_lib
+        preset = st.selectbox(
+            "Filter by Date Range",
+            options=["All Time (Semua Waktu)", "Last 30 Days (1 Bulan)", "Last 60 Days (2 Bulan)", "Custom (Pilih Manual)"],
+            index=0,
+            key="raw_date_preset"
+        )
+        
         start_date_str = None
         end_date_str = None
-        if len(date_range) == 2:
-            start_date_str = date_range[0].strftime("%Y-%m-%d")
-            end_date_str = date_range[1].strftime("%Y-%m-%d")
-        elif len(date_range) == 1:
-            start_date_str = date_range[0].strftime("%Y-%m-%d")
+        
+        if preset == "Custom (Pilih Manual)":
+            date_range = st.date_input("Select Custom Date Range", value=(), key="date_range_raw")
+            if len(date_range) == 2:
+                start_date_str = date_range[0].strftime("%Y-%m-%d")
+                end_date_str = date_range[1].strftime("%Y-%m-%d")
+            elif len(date_range) == 1:
+                start_date_str = date_range[0].strftime("%Y-%m-%d")
+        elif preset == "Last 30 Days (1 Bulan)":
+            today = dt_lib.date.today()
+            start_date_str = (today - dt_lib.timedelta(days=30)).strftime("%Y-%m-%d")
+            end_date_str = today.strftime("%Y-%m-%d")
+        elif preset == "Last 60 Days (2 Bulan)":
+            today = dt_lib.date.today()
+            start_date_str = (today - dt_lib.timedelta(days=60)).strftime("%Y-%m-%d")
+            end_date_str = today.strftime("%Y-%m-%d")
 
     raw_t1, raw_t2 = st.columns([1.2, 1])
     with raw_t1:
