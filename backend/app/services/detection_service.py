@@ -202,7 +202,7 @@ def run_gemini_inference(image_path: str, request_id: str) -> tuple[List[Dict[st
     
     for attempt in range(max_retries):
         current_key = api_keys[key_index % len(api_keys)]
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={current_key}"
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={current_key}"
         
         try:
             response = requests.post(url, headers=headers, json=payload, timeout=settings.DETECT_TIMEOUT_SECONDS or 30)
@@ -320,7 +320,7 @@ def run_gemini_inference(image_path: str, request_id: str) -> tuple[List[Dict[st
         "request_id": request_id,
         "inference_ms": round(inference_time_ms, 2),
         "num_items": len(detections),
-        "model_version": "gemini-2.0-flash"
+        "model_version": "gemini-2.5-flash"
     }
     logger.info(str(log_payload))
     
@@ -359,7 +359,7 @@ def process_detection(
 
     # Create analysis record
     if det_mode == "GEMINI":
-        model_version_str = "gemini-2.0-flash"
+        model_version_str = "gemini-2.5-flash"
     else:
         model_version_str = model_status.get("active_model") or "unknown"
 
