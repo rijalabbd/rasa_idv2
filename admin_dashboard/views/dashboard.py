@@ -266,52 +266,72 @@ def render_dashboard():
             st.error(st.session_state.upload_error)
 
     # -------------------------------------------------------------------------
-    # Detection Mode Configuration Section
+    # Detection Mode Configuration Section (Hidden behind secret unlock)
     # -------------------------------------------------------------------------
     st.divider()
-    st.markdown(h2("settings", "Pengaturan Mode Deteksi"), unsafe_allow_html=True)
     
-    settings_data = st.session_state.settings_data
+    # Initialize secret counter in session state
+    if "secret_mode_clicks" not in st.session_state:
+        st.session_state.secret_mode_clicks = 0
+    if "secret_mode_unlocked" not in st.session_state:
+        st.session_state.secret_mode_unlocked = False
     
-    if settings_data:
-        curr_mode = settings_data.get("detection_mode", "YOLO")
-        has_key = settings_data.get("has_gemini_key", False)
+    # Secret unlock: clicking the version label 5 times reveals the panel
+    ver_col1, ver_col2 = st.columns([4, 1])
+    with ver_col1:
+        st.caption("Sistem Deteksi: Model Lokal v2.0")
+    with ver_col2:
+        if st.button("ℹ️", key="secret_mode_toggle", help="Informasi versi"):
+            st.session_state.secret_mode_clicks += 1
+            if st.session_state.secret_mode_clicks >= 5:
+                st.session_state.secret_mode_unlocked = not st.session_state.secret_mode_unlocked
+                st.session_state.secret_mode_clicks = 0
+            st.rerun()
+    
+    if st.session_state.secret_mode_unlocked:
+        st.markdown(h2("settings", "Pengaturan Mode Deteksi"), unsafe_allow_html=True)
         
-        mode_col1, mode_col2 = st.columns([3, 1])
+        settings_data = st.session_state.settings_data
         
-        with mode_col1:
-            mode_options = {
-                "YOLO": "YOLO (Model Lokal - Cepat & Luring)",
-                "GEMINI": "Gemini API (Multimodal Cloud - Dinamis & Cerdas)"
-            }
-            idx = 0 if curr_mode == "YOLO" else 1
+        if settings_data:
+            curr_mode = settings_data.get("detection_mode", "YOLO")
+            has_key = settings_data.get("has_gemini_key", False)
             
-            selected_mode = st.radio(
-                "Pilih Mode Deteksi Aktif:",
-                options=list(mode_options.keys()),
-                format_func=lambda m: mode_options[m],
-                index=idx,
-                horizontal=True,
-                key="active_detection_mode_radio"
-            )
+            mode_col1, mode_col2 = st.columns([3, 1])
             
-            if selected_mode == "GEMINI":
-                if not has_key:
-                    st.error("⚠️ **Peringatan:** `GEMINI_API_KEY` tidak terdeteksi di file `.env` server. Deteksi Gemini tidak akan berfungsi sebelum kunci API ditambahkan.")
+            with mode_col1:
+                mode_options = {
+                    "YOLO": "YOLO (Model Lokal - Cepat & Luring)",
+                    "GEMINI": "Cloud API (Multimodal - Dinamis & Cerdas)"
+                }
+                idx = 0 if curr_mode == "YOLO" else 1
+                
+                selected_mode = st.radio(
+                    "Pilih Mode Deteksi Aktif:",
+                    options=list(mode_options.keys()),
+                    format_func=lambda m: mode_options[m],
+                    index=idx,
+                    horizontal=True,
+                    key="active_detection_mode_radio"
+                )
+                
+                if selected_mode == "GEMINI":
+                    if not has_key:
+                        st.error("⚠️ **Peringatan:** Kunci API Cloud tidak terdeteksi di server. Mode ini tidak akan berfungsi sebelum kunci API ditambahkan.")
+                    else:
+                        st.success("✅ Kunci API Cloud terkonfigurasi di server. Siap digunakan.")
                 else:
-                    st.success("✅ `GEMINI_API_KEY` terkonfigurasi di server. Siap digunakan.")
-            else:
-                st.info("ℹ️ Mode YOLO menggunakan model lokal `active.pt` yang diunggah di atas.")
-                
-        with mode_col2:
-            st.markdown("<br>", unsafe_allow_html=True)
-            if st.button("Simpan Mode Deteksi", key="save_settings_btn", use_container_width=True, type="primary"):
-                save_settings(selected_mode)
-                
-    elif st.session_state.settings_error:
-        st.error(f"Gagal memuat pengaturan mode deteksi: {st.session_state.settings_error}")
-    else:
-        st.info("Memuat pengaturan...")
+                    st.info("ℹ️ Mode YOLO menggunakan model lokal `active.pt` yang diunggah di atas.")
+                    
+            with mode_col2:
+                st.markdown("<br>", unsafe_allow_html=True)
+                if st.button("Simpan Mode Deteksi", key="save_settings_btn", use_container_width=True, type="primary"):
+                    save_settings(selected_mode)
+                    
+        elif st.session_state.settings_error:
+            st.error(f"Gagal memuat pengaturan mode deteksi: {st.session_state.settings_error}")
+        else:
+            st.info("Memuat pengaturan...")
 
     # -------------------------------------------------------------------------
     # Active Model Classes Table

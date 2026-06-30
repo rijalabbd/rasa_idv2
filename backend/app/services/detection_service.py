@@ -127,16 +127,16 @@ def run_gemini_inference(image_path: str, request_id: str) -> tuple[List[Dict[st
     if not settings.GEMINI_API_KEY or not settings.GEMINI_API_KEY.strip():
         raise AppException(
             status_code=400,
-            detail="GEMINI_API_KEY tidak dikonfigurasi di file .env server.",
-            code="GEMINI_API_KEY_MISSING"
+            detail="Kunci API deteksi tidak dikonfigurasi di server.",
+            code="DETECTION_KEY_MISSING"
         )
         
     api_keys = [k.strip() for k in settings.GEMINI_API_KEY.split(",") if k.strip()]
     if not api_keys:
         raise AppException(
             status_code=400,
-            detail="Format GEMINI_API_KEY tidak valid.",
-            code="GEMINI_API_KEY_MISSING"
+            detail="Format kunci API deteksi tidak valid.",
+            code="DETECTION_KEY_MISSING"
         )
         
     # 4. Fetch allowed labels from YOLO model to restrict Gemini's output classes
@@ -246,8 +246,8 @@ def run_gemini_inference(image_path: str, request_id: str) -> tuple[List[Dict[st
             logger.error(f"Gemini API request failed: {e}")
             raise AppException(
                 status_code=502,
-                detail="Koneksi ke Gemini API gagal atau mengalami timeout.",
-                code="GEMINI_CONNECTION_TIMEOUT"
+                detail="Koneksi ke layanan deteksi gagal atau mengalami timeout.",
+                code="DETECTION_CONNECTION_TIMEOUT"
             )
             
     if response is None or response.status_code != 200:
@@ -256,8 +256,8 @@ def run_gemini_inference(image_path: str, request_id: str) -> tuple[List[Dict[st
         logger.error(f"Gemini API returned status code {status_code_val}: {response_text}")
         raise AppException(
             status_code=502,
-            detail=f"Gagal memanggil Gemini API (HTTP {status_code_val}).",
-            code="GEMINI_API_ERROR"
+            detail=f"Gagal memanggil layanan deteksi (HTTP {status_code_val}).",
+            code="DETECTION_API_ERROR"
         )
         
     inference_time_ms = (time.perf_counter() - start_time) * 1000
@@ -280,8 +280,8 @@ def run_gemini_inference(image_path: str, request_id: str) -> tuple[List[Dict[st
         logger.error(f"Failed to parse Gemini response: {e}. Raw response: {response.text}")
         raise AppException(
             status_code=502,
-            detail="Format respons dari Gemini API tidak valid.",
-            code="GEMINI_RESPONSE_PARSE_ERROR"
+            detail="Format respons dari layanan deteksi tidak valid.",
+            code="DETECTION_RESPONSE_PARSE_ERROR"
         )
         
     # 7. Convert coordinates [ymin, xmin, ymax, xmax] (0-1000) -> [x1, y1, x2, y2] (original pixels)
