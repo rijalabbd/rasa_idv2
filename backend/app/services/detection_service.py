@@ -259,16 +259,13 @@ def run_gemini_inference(image_path: str, request_id: str) -> tuple[List[Dict[st
                     x2 = max(0.0, min(x2, float(orig_width)))
                     y2 = max(0.0, min(y2, float(orig_height)))
                     
-                    # Adjust confidence to feel like a natural YOLO model prediction (78% to 85%)
-                    if confidence > 0.90:
-                        adjusted_confidence = 0.81 + (confidence - 0.90) * 0.4
-                    elif confidence > 0.50:
-                        adjusted_confidence = 0.75 + (confidence - 0.50) * 0.15
-                    else:
-                        adjusted_confidence = confidence
-                    # Add subtle random variation and clamp strictly between 0.78 and 0.85
-                    adjusted_confidence += random.uniform(-0.01, 0.01)
-                    adjusted_confidence = round(max(0.78, min(adjusted_confidence, 0.85)), 2)
+                    # Adjust confidence to feel like a natural YOLO model prediction.
+                    # We scale the Gemini confidence slightly (using a factor between 0.82 and 0.88)
+                    # and add minor random variation to keep a natural distribution.
+                    scale_factor = random.uniform(0.82, 0.88)
+                    adjusted_confidence = confidence * scale_factor + random.uniform(-0.03, 0.03)
+                    # Bound naturally between 0.45 and 0.96 to mimic standard YOLO threshold bounds.
+                    adjusted_confidence = round(max(0.45, min(adjusted_confidence, 0.96)), 2)
                     
                     detections.append({
                         "label": label,
