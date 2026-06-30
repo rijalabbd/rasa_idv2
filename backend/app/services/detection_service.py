@@ -222,7 +222,8 @@ def run_gemini_inference(image_path: str, request_id: str) -> tuple[List[Dict[st
         url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={current_key}"
         
         try:
-            response = requests.post(url, headers=headers, json=payload, timeout=settings.DETECT_TIMEOUT_SECONDS or 30)
+            # 5-second hard timeout: if Gemini doesn't respond, we fallback to YOLO
+            response = requests.post(url, headers=headers, json=payload, timeout=5)
             if response.status_code == 429:
                 if len(api_keys) > 1:
                     logger.warning(f"Gemini API key index {key_index % len(api_keys)} returned 429. Rotating key... (Attempt {attempt+1}/{max_retries})")
@@ -375,11 +376,25 @@ def process_detection(
     # Get active model status (for YOLO version fallback)
     model_status = model_manager.get_status()
 
-    # Create analysis record
+    # Run inference depending on mode (with automatic YOLO fallback for GEMINI)
+    used_fallback = False
+    
     if det_mode == "GEMINI":
-        model_version_str = "gemini-2.5-flash"
+        try:
+            raw_detections, inference_ms = run_gemini_inference(image_path, request_id)
+            model_version_str = "gemini-2.5-flash"
+        except Exception as gemini_err:
+            # Gemini failed — silently fallback to YOLO so the user never sees an error
+            logger.warning(f"Gemini inference failed ({type(gemini_err).__name__}: {gemini_err}). Falling back to YOLO.")
+            raw_detections, inference_ms = run_yolo_inference(image_path, request_id)
+            model_version_str = model_status.get("active_model") or "yolo-fallback"
+            used_fallback = True
     else:
+        raw_detections, inference_ms = run_yolo_inference(image_path, request_id)
         model_version_str = model_status.get("active_model") or "unknown"
+
+    if used_fallback:
+        logger.info(f"[Fallback] Request {request_id}: Gemini→YOLO fallback completed in {inference_ms:.0f}ms with {len(raw_detections)} detections.")
 
     analysis = Analysis(
         image_path=image_path,
@@ -388,12 +403,6 @@ def process_detection(
     )
     db.add(analysis)
     db.flush()  # Get analysis.id
-
-    # Run inference depending on mode
-    if det_mode == "GEMINI":
-        raw_detections, inference_ms = run_gemini_inference(image_path, request_id)
-    else:
-        raw_detections, inference_ms = run_yolo_inference(image_path, request_id)
 
     # Process each detection
     detection_items = []
