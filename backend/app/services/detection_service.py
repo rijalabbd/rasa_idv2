@@ -161,7 +161,7 @@ def run_gemini_inference(image_path: str, request_id: str) -> tuple[List[Dict[st
     }
     
     start_time = time.perf_counter()
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={settings.GEMINI_API_KEY}"
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={settings.GEMINI_API_KEY}"
     headers = {"Content-Type": "application/json"}
     
     try:
@@ -244,7 +244,7 @@ def run_gemini_inference(image_path: str, request_id: str) -> tuple[List[Dict[st
         "request_id": request_id,
         "inference_ms": round(inference_time_ms, 2),
         "num_items": len(detections),
-        "model_version": "gemini-1.5-flash"
+        "model_version": "gemini-2.5-flash"
     }
     logger.info(str(log_payload))
     
@@ -283,7 +283,7 @@ def process_detection(
 
     # Create analysis record
     if det_mode == "GEMINI":
-        model_version_str = "gemini-1.5-flash"
+        model_version_str = "gemini-2.5-flash"
     else:
         model_version_str = model_status.get("active_model") or "unknown"
 
