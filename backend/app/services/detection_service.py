@@ -187,21 +187,38 @@ def run_gemini_inference(image_path: str, request_id: str) -> tuple[List[Dict[st
     url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={settings.GEMINI_API_KEY}"
     headers = {"Content-Type": "application/json"}
     
-    try:
-        response = requests.post(url, headers=headers, json=payload, timeout=settings.DETECT_TIMEOUT_SECONDS or 30)
-    except requests.exceptions.RequestException as e:
-        logger.error(f"Gemini API request failed: {e}")
+    max_retries = 3
+    response = None
+    for attempt in range(max_retries):
+        try:
+            response = requests.post(url, headers=headers, json=payload, timeout=settings.DETECT_TIMEOUT_SECONDS or 30)
+            if response.status_code == 429:
+                if attempt < max_retries - 1:
+                    wait_time = 2 * (attempt + 1)
+                    logger.warning(f"Gemini API returned 429 (Rate Limit Exceeded). Retrying in {wait_time}s... (Attempt {attempt+1}/{max_retries})")
+                    time.sleep(wait_time)
+                    continue
+            break
+        except requests.exceptions.RequestException as e:
+            if attempt < max_retries - 1:
+                wait_time = 2 * (attempt + 1)
+                logger.warning(f"Gemini API request failed on attempt {attempt+1}: {e}. Retrying in {wait_time}s...")
+                time.sleep(wait_time)
+                continue
+            logger.error(f"Gemini API request failed: {e}")
+            raise AppException(
+                status_code=502,
+                detail="Koneksi ke Gemini API gagal atau mengalami timeout.",
+                code="GEMINI_CONNECTION_TIMEOUT"
+            )
+            
+    if response is None or response.status_code != 200:
+        status_code_val = response.status_code if response is not None else 500
+        response_text = response.text if response is not None else "No response"
+        logger.error(f"Gemini API returned status code {status_code_val}: {response_text}")
         raise AppException(
             status_code=502,
-            detail="Koneksi ke Gemini API gagal atau mengalami timeout.",
-            code="GEMINI_CONNECTION_TIMEOUT"
-        )
-        
-    if response.status_code != 200:
-        logger.error(f"Gemini API returned status code {response.status_code}: {response.text}")
-        raise AppException(
-            status_code=502,
-            detail=f"Gagal memanggil Gemini API (HTTP {response.status_code}).",
+            detail=f"Gagal memanggil Gemini API (HTTP {status_code_val}).",
             code="GEMINI_API_ERROR"
         )
         
