@@ -105,8 +105,8 @@ def run_gemini_inference(image_path: str, request_id: str) -> tuple[List[Dict[st
         with Image.open(absolute_image_path) as img:
             orig_width, orig_height = img.size
             
-            # Compress and resize to max 640x640 to significantly optimize upload speed
-            img.thumbnail((640, 640))
+            # Compress and resize to max 448x448 to further optimize Google server-side processing
+            img.thumbnail((448, 448))
             
             import io
             buffer = io.BytesIO()
