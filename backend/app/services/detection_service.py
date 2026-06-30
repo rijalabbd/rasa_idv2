@@ -147,35 +147,27 @@ def run_gemini_inference(image_path: str, request_id: str) -> tuple[List[Dict[st
         logger.warning(f"Failed to fetch active YOLO classes: {e}. General fallback will be used.")
         valid_labels = []
 
-    class_restriction_prompt = ""
-    if valid_labels:
-        class_list_str = ", ".join([f"'{lbl}'" for lbl in valid_labels])
-        class_restriction_prompt = (
-            f"CRITICAL: You must ONLY detect objects that match one of the food classes in this allowed list: [{class_list_str}]. "
-            "If an object in the image is not in this allowed list, or is a non-food item (like plates, cups, table, forks), "
-            "do NOT detect it under any circumstances. Strictly ignore it. "
-            "Double check that every label you return is a strict character match from this allowed list."
-        )
-    else:
-        class_restriction_prompt = "Identify only food items. Do not detect non-food items."
+    class_list_str = ", ".join([f"'{lbl}'" for lbl in valid_labels]) if valid_labels else "any food label"
+    system_instruction_text = (
+        "You are an expert food detection AI. Your task is to identify food items in the image. "
+        f"You must ONLY detect objects that match one of the food classes in this allowed list: [{class_list_str}]. "
+        "If an object is not in this allowed list, or is a non-food item (like plates, cups, tables, forks, spoons, background), "
+        "do NOT detect it. Ignore it completely. "
+        "Verify that every label returned is a strict character match from the allowed list."
+    )
 
-    # 5. Build Gemini API Structured generation payload
+    # 5. Build Gemini API payload with systemInstruction and responseSchema (highly optimized for low latency)
     payload = {
+        "systemInstruction": {
+            "parts": [
+                {
+                    "text": system_instruction_text
+                }
+            ]
+        },
         "contents": [
             {
                 "parts": [
-                    {
-                        "text": (
-                            "Identify all food items present in this image. "
-                            f"{class_restriction_prompt} "
-                            "For each detected food item, return: "
-                            "1. A label string from the allowed list (lowercase with underscores). "
-                            "2. A confidence score between 0.0 and 1.0. "
-                            "3. A bounding box [ymin, xmin, ymax, xmax] normalized to 0-1000 integers. "
-                            "Return ONLY a JSON list of objects: [{\"label\": \"...\", \"confidence\": ..., \"bbox\": [ymin, xmin, ymax, xmax]}]. "
-                            "Return [] if no valid food items from the allowed list are present."
-                        )
-                    },
                     {
                         "inlineData": {
                             "mimeType": "image/jpeg",
@@ -186,7 +178,32 @@ def run_gemini_inference(image_path: str, request_id: str) -> tuple[List[Dict[st
             }
         ],
         "generationConfig": {
-            "responseMimeType": "application/json"
+            "responseMimeType": "application/json",
+            "temperature": 0.1,
+            "responseSchema": {
+                "type": "ARRAY",
+                "items": {
+                    "type": "OBJECT",
+                    "properties": {
+                        "label": {
+                            "type": "STRING",
+                            "description": "Allowed class label matching the list"
+                        },
+                        "confidence": {
+                            "type": "NUMBER",
+                            "description": "Confidence score from 0.0 to 1.0"
+                        },
+                        "bbox": {
+                            "type": "ARRAY",
+                            "items": {
+                                "type": "INTEGER"
+                            },
+                            "description": "Bounding box coordinates [ymin, xmin, ymax, xmax] normalized (0-1000)"
+                        }
+                    },
+                    "required": ["label", "confidence", "bbox"]
+                }
+            }
         }
     }
     
