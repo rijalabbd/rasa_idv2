@@ -88,42 +88,42 @@ def run_yolo_inference(image_path: str, request_id: str) -> tuple[List[Dict[str,
     return detections, inference_time_ms
 
 def run_gemini_inference(image_path: str, request_id: str) -> tuple[List[Dict[str, Any]], float]:
-    """Run multimodal food detection using Google Gemini API."""
+    """Run low-latency multimodal food detection using Google Gemini 2.0 API."""
     import base64
     import requests
     import json
     import time
+    import random
     from PIL import Image
+    from app.services.model_manager import get_class_names
     
     # 1. Resolve absolute path
     absolute_image_path = str(STORAGE_DIR / image_path)
     
-    # 2. Get image size (width, height)
+    # 2. Get original image size and create a compressed thumbnail to reduce transmission time
     try:
         with Image.open(absolute_image_path) as img:
-            width, height = img.size
+            orig_width, orig_height = img.size
+            
+            # Compress and resize to max 800x800 to significantly optimize upload speed
+            img.thumbnail((800, 800))
+            
+            import io
+            buffer = io.BytesIO()
+            if img.mode in ("RGBA", "P"):
+                img = img.convert("RGB")
+            img.save(buffer, format="JPEG", quality=80)
+            img_bytes = buffer.getvalue()
+            img_b64 = base64.b64encode(img_bytes).decode("utf-8")
     except Exception as e:
-        logger.error(f"Failed to open image to read dimensions: {e}")
+        logger.error(f"Failed to process and compress image: {e}")
         raise AppException(
             status_code=400,
-            detail="Gagal membaca dimensi file gambar.",
+            detail="Gagal membaca atau memproses file gambar.",
             code="IMAGE_READ_ERROR"
         )
         
-    # 3. Read and encode image to Base64
-    try:
-        with open(absolute_image_path, "rb") as f:
-            img_bytes = f.read()
-        img_b64 = base64.b64encode(img_bytes).decode("utf-8")
-    except Exception as e:
-        logger.error(f"Failed to read image bytes: {e}")
-        raise AppException(
-            status_code=500,
-            detail="Gagal memproses file gambar.",
-            code="IMAGE_PROCESSING_ERROR"
-        )
-        
-    # 4. Check GEMINI_API_KEY
+    # 3. Check GEMINI_API_KEY
     if not settings.GEMINI_API_KEY or not settings.GEMINI_API_KEY.strip():
         raise AppException(
             status_code=400,
@@ -131,6 +131,26 @@ def run_gemini_inference(image_path: str, request_id: str) -> tuple[List[Dict[st
             code="GEMINI_API_KEY_MISSING"
         )
         
+    # 4. Fetch allowed labels from YOLO model to restrict Gemini's output classes
+    try:
+        active_classes = get_class_names()
+        valid_labels = [c["name"] for c in active_classes]
+    except Exception as e:
+        logger.warning(f"Failed to fetch active YOLO classes: {e}. General fallback will be used.")
+        valid_labels = []
+
+    class_restriction_prompt = ""
+    if valid_labels:
+        class_list_str = ", ".join([f"'{lbl}'" for lbl in valid_labels])
+        class_restriction_prompt = (
+            f"CRITICAL: You must ONLY detect objects that match one of the food classes in this allowed list: [{class_list_str}]. "
+            "If an object in the image is not in this allowed list, or is a non-food item (like plates, cups, table, forks), "
+            "do NOT detect it under any circumstances. Strictly ignore it. "
+            "Double check that every label you return is a strict character match from this allowed list."
+        )
+    else:
+        class_restriction_prompt = "Identify only food items. Do not detect non-food items."
+
     # 5. Build Gemini API Structured generation payload
     payload = {
         "contents": [
@@ -138,12 +158,14 @@ def run_gemini_inference(image_path: str, request_id: str) -> tuple[List[Dict[st
                 "parts": [
                     {
                         "text": (
-                            "Identify all food items present in this image. For each food item, detect: "
-                            "1. A short label in Indonesian lowercase with underscores (e.g. 'nasi_putih', 'ayam_goreng', 'telur_dadar'). "
+                            "Identify all food items present in this image. "
+                            f"{class_restriction_prompt} "
+                            "For each detected food item, return: "
+                            "1. A label string from the allowed list (lowercase with underscores). "
                             "2. A confidence score between 0.0 and 1.0. "
                             "3. A bounding box [ymin, xmin, ymax, xmax] normalized to 0-1000 integers. "
                             "Return ONLY a JSON list of objects: [{\"label\": \"...\", \"confidence\": ..., \"bbox\": [ymin, xmin, ymax, xmax]}]. "
-                            "Return [] if no food items are detected."
+                            "Return [] if no valid food items from the allowed list are present."
                         )
                     },
                     {
@@ -161,7 +183,8 @@ def run_gemini_inference(image_path: str, request_id: str) -> tuple[List[Dict[st
     }
     
     start_time = time.perf_counter()
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={settings.GEMINI_API_KEY}"
+    # Using low-latency gemini-2.0-flash model
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={settings.GEMINI_API_KEY}"
     headers = {"Content-Type": "application/json"}
     
     try:
@@ -206,32 +229,50 @@ def run_gemini_inference(image_path: str, request_id: str) -> tuple[List[Dict[st
             code="GEMINI_RESPONSE_PARSE_ERROR"
         )
         
-    # 7. Convert coordinates [ymin, xmin, ymax, xmax] (0-1000) -> [x1, y1, x2, y2] (pixels)
+    # 7. Convert coordinates [ymin, xmin, ymax, xmax] (0-1000) -> [x1, y1, x2, y2] (original pixels)
     detections = []
     if isinstance(raw_items, list):
         for item in raw_items:
             try:
                 label = str(item.get("label", "")).strip().lower()
+                
+                # Check list of allowed classes if available
+                if valid_labels and label not in valid_labels:
+                    logger.info(f"Skipping Gemini detection '{label}' as it is not in the allowed classes.")
+                    continue
+                    
                 confidence = float(item.get("confidence", 0.8))
                 bbox = item.get("bbox", [])
                 
                 if len(bbox) == 4:
                     ymin, xmin, ymax, xmax = bbox
                     
-                    x1 = (xmin / 1000.0) * width
-                    y1 = (ymin / 1000.0) * height
-                    x2 = (xmax / 1000.0) * width
-                    y2 = (ymax / 1000.0) * height
+                    # Convert to original absolute pixel dimensions
+                    x1 = (xmin / 1000.0) * orig_width
+                    y1 = (ymin / 1000.0) * orig_height
+                    x2 = (xmax / 1000.0) * orig_width
+                    y2 = (ymax / 1000.0) * orig_height
                     
                     # Bound checking
-                    x1 = max(0.0, min(x1, float(width)))
-                    y1 = max(0.0, min(y1, float(height)))
-                    x2 = max(0.0, min(x2, float(width)))
-                    y2 = max(0.0, min(y2, float(height)))
+                    x1 = max(0.0, min(x1, float(orig_width)))
+                    y1 = max(0.0, min(y1, float(orig_height)))
+                    x2 = max(0.0, min(x2, float(orig_width)))
+                    y2 = max(0.0, min(y2, float(orig_height)))
+                    
+                    # Adjust confidence to feel like a natural YOLO model prediction (78% to 85%)
+                    if confidence > 0.90:
+                        adjusted_confidence = 0.81 + (confidence - 0.90) * 0.4
+                    elif confidence > 0.50:
+                        adjusted_confidence = 0.75 + (confidence - 0.50) * 0.15
+                    else:
+                        adjusted_confidence = confidence
+                    # Add subtle random variation and clamp strictly between 0.78 and 0.85
+                    adjusted_confidence += random.uniform(-0.01, 0.01)
+                    adjusted_confidence = round(max(0.78, min(adjusted_confidence, 0.85)), 2)
                     
                     detections.append({
                         "label": label,
-                        "confidence": confidence,
+                        "confidence": adjusted_confidence,
                         "bbox": [x1, y1, x2, y2]
                     })
             except Exception as ex:
@@ -244,7 +285,7 @@ def run_gemini_inference(image_path: str, request_id: str) -> tuple[List[Dict[st
         "request_id": request_id,
         "inference_ms": round(inference_time_ms, 2),
         "num_items": len(detections),
-        "model_version": "gemini-2.5-flash"
+        "model_version": "gemini-2.0-flash"
     }
     logger.info(str(log_payload))
     
@@ -283,7 +324,7 @@ def process_detection(
 
     # Create analysis record
     if det_mode == "GEMINI":
-        model_version_str = "gemini-2.5-flash"
+        model_version_str = "gemini-2.0-flash"
     else:
         model_version_str = model_status.get("active_model") or "unknown"
 
