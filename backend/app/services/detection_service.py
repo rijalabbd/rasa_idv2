@@ -105,14 +105,14 @@ def run_gemini_inference(image_path: str, request_id: str) -> tuple[List[Dict[st
         with Image.open(absolute_image_path) as img:
             orig_width, orig_height = img.size
             
-            # Compress and resize to max 800x800 to significantly optimize upload speed
-            img.thumbnail((800, 800))
+            # Compress and resize to max 640x640 to significantly optimize upload speed
+            img.thumbnail((640, 640))
             
             import io
             buffer = io.BytesIO()
             if img.mode in ("RGBA", "P"):
                 img = img.convert("RGB")
-            img.save(buffer, format="JPEG", quality=80)
+            img.save(buffer, format="JPEG", quality=70)
             img_bytes = buffer.getvalue()
             img_b64 = base64.b64encode(img_bytes).decode("utf-8")
     except Exception as e:
