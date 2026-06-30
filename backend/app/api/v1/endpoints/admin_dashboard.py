@@ -108,3 +108,56 @@ async def upload_model(
             error_code="UPLOAD_FAILED",
         )
         raise
+
+
+# ---------------------------------------------------------------------------
+# Settings Endpoints
+# ---------------------------------------------------------------------------
+
+from pydantic import BaseModel
+from app.services import settings_service
+from app.core.config import settings
+from app.core.exceptions import AppException
+
+class SettingsUpdateSchema(BaseModel):
+    detection_mode: str
+
+@router.get("/settings")
+async def get_admin_settings():
+    """Get admin settings including detection mode and if gemini API key is configured."""
+    current_settings = settings_service.get_settings()
+    return {
+        "detection_mode": current_settings.get("detection_mode", "YOLO"),
+        "has_gemini_key": bool(settings.GEMINI_API_KEY and settings.GEMINI_API_KEY.strip())
+    }
+
+@router.post("/settings")
+async def update_admin_settings(
+    payload: SettingsUpdateSchema,
+    request: Request,
+    db: Session = Depends(get_db),
+    admin_key: str = Depends(get_admin_api_key)
+):
+    """Update admin settings (detection mode)."""
+    audit = AuditService(db)
+    if payload.detection_mode not in ("YOLO", "GEMINI"):
+        raise AppException(
+            status_code=400,
+            detail="Invalid detection mode. Supported modes are 'YOLO' and 'GEMINI'.",
+            code="INVALID_DETECTION_MODE"
+        )
+    
+    settings_service.save_settings({"detection_mode": payload.detection_mode})
+    
+    audit.log_action(
+        action="UPDATE_SETTINGS",
+        request=request,
+        admin_key=admin_key,
+        meta={
+            "detection_mode": payload.detection_mode,
+            "result": "success"
+        }
+    )
+    
+    return {"message": f"Detection mode updated to {payload.detection_mode} successfully."}
+
