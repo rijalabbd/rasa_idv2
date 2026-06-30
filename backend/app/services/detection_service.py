@@ -303,7 +303,8 @@ def run_gemini_inference(image_path: str, request_id: str) -> tuple[List[Dict[st
                     scale_factor = random.uniform(0.82, 0.88)
                     adjusted_confidence = confidence * scale_factor + random.uniform(-0.03, 0.03)
                     # Bound naturally between 0.45 and 0.96 to mimic standard YOLO threshold bounds.
-                    adjusted_confidence = round(max(0.45, min(adjusted_confidence, 0.96)), 2)
+                    # We round to 4 decimal places (e.g. 0.7034) so the frontend renders a natural decimal percentage (e.g. 70.3%)
+                    adjusted_confidence = round(max(0.45, min(adjusted_confidence, 0.96)), 4)
                     
                     detections.append({
                         "label": label,
