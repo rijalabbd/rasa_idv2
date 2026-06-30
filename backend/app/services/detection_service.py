@@ -123,11 +123,19 @@ def run_gemini_inference(image_path: str, request_id: str) -> tuple[List[Dict[st
             code="IMAGE_READ_ERROR"
         )
         
-    # 3. Check GEMINI_API_KEY
+    # 3. Check and load GEMINI_API_KEY(s)
     if not settings.GEMINI_API_KEY or not settings.GEMINI_API_KEY.strip():
         raise AppException(
             status_code=400,
             detail="GEMINI_API_KEY tidak dikonfigurasi di file .env server.",
+            code="GEMINI_API_KEY_MISSING"
+        )
+        
+    api_keys = [k.strip() for k in settings.GEMINI_API_KEY.split(",") if k.strip()]
+    if not api_keys:
+        raise AppException(
+            status_code=400,
+            detail="Format GEMINI_API_KEY tidak valid.",
             code="GEMINI_API_KEY_MISSING"
         )
         
@@ -183,26 +191,39 @@ def run_gemini_inference(image_path: str, request_id: str) -> tuple[List[Dict[st
     }
     
     start_time = time.perf_counter()
-    # Using low-latency gemini-2.0-flash model
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={settings.GEMINI_API_KEY}"
     headers = {"Content-Type": "application/json"}
+    
+    # Shuffle keys list to distribute rate-limit load across keys evenly
+    random.shuffle(api_keys)
     
     max_retries = 3
     response = None
+    key_index = 0
+    
     for attempt in range(max_retries):
+        current_key = api_keys[key_index % len(api_keys)]
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={current_key}"
+        
         try:
             response = requests.post(url, headers=headers, json=payload, timeout=settings.DETECT_TIMEOUT_SECONDS or 30)
             if response.status_code == 429:
-                if attempt < max_retries - 1:
-                    wait_time = 2 * (attempt + 1)
-                    logger.warning(f"Gemini API returned 429 (Rate Limit Exceeded). Retrying in {wait_time}s... (Attempt {attempt+1}/{max_retries})")
-                    time.sleep(wait_time)
+                if len(api_keys) > 1:
+                    logger.warning(f"Gemini API key index {key_index % len(api_keys)} returned 429. Rotating key... (Attempt {attempt+1}/{max_retries})")
+                    key_index += 1
+                    # Rotate key and retry immediately without delay
                     continue
+                else:
+                    if attempt < max_retries - 1:
+                        wait_time = 2 * (attempt + 1)
+                        logger.warning(f"Single Gemini API key returned 429. Retrying in {wait_time}s... (Attempt {attempt+1}/{max_retries})")
+                        time.sleep(wait_time)
+                        continue
             break
         except requests.exceptions.RequestException as e:
             if attempt < max_retries - 1:
-                wait_time = 2 * (attempt + 1)
-                logger.warning(f"Gemini API request failed on attempt {attempt+1}: {e}. Retrying in {wait_time}s...")
+                wait_time = 1
+                logger.warning(f"Gemini API request failed on attempt {attempt+1}: {e}. Rotating key and retrying in {wait_time}s...")
+                key_index += 1
                 time.sleep(wait_time)
                 continue
             logger.error(f"Gemini API request failed: {e}")
