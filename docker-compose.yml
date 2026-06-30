@@ -54,6 +54,7 @@ services:
       MODEL_PATH: ./storage/models/best.pt
       CONF_THRESHOLD: "0.5"
       ADMIN_KEY: admin_secret_123
+      GEMINI_API_KEY: ${GEMINI_API_KEY}
     
     # Port mapping
     ports:

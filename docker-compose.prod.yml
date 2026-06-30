@@ -65,6 +65,7 @@ services:
       CONF_THRESHOLD: ${CONF_THRESHOLD:-0.5}
       ADMIN_KEY: ${ADMIN_KEY}
       APP_ENV: production
+      GEMINI_API_KEY: ${GEMINI_API_KEY}
 
     ports:
       - "8000:8000"
