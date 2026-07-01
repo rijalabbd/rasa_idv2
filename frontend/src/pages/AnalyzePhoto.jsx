@@ -58,6 +58,19 @@ function PortionBtn({ label, active, onClick, disabled }) {
   );
 }
 
+const LOADING_MESSAGES = [
+  "Mengoptimalkan resolusi gambar...",
+  "Mengompresi data visual...",
+  "Menghubungkan ke server...",
+  "Menganalisis jenis makanan...",
+  "Memproses struktur warna...",
+  "Mengevaluasi porsi hidangan...",
+  "Mencocokkan data TKPI...",
+  "Menghitung kalori & nutrisi...",
+  "Menyelesaikan hasil analisis...",
+  "Hampir selesai, memuat grafik..."
+];
+
 // â”€â”€â”€ Main component â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export default function AnalyzePhoto() {
   const navigate = useNavigate();
@@ -65,7 +78,19 @@ export default function AnalyzePhoto() {
   const [selectedFile, setSelectedFile] = useState(null);
   const [previewUrl, setPreviewUrl] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [loadingText, setLoadingText] = useState(LOADING_MESSAGES[0]);
   const [error, setError] = useState(null);
+
+  useEffect(() => {
+    if (!loading) return;
+    setLoadingText(LOADING_MESSAGES[0]);
+    let idx = 0;
+    const interval = setInterval(() => {
+      idx = (idx + 1) % LOADING_MESSAGES.length;
+      setLoadingText(LOADING_MESSAGES[idx]);
+    }, 1200);
+    return () => clearInterval(interval);
+  }, [loading]);
 
   const [analysisId, setAnalysisId] = useState(null);
   const [detectionItems, setDetectionItems] = useState([]);
@@ -509,6 +534,99 @@ export default function AnalyzePhoto() {
           /* Hidden scrollbar for left sticky col */
           .left-col-scroll::-webkit-scrollbar { display: none; }
           .left-col-scroll { -ms-overflow-style: none; scrollbar-width: none; }
+
+          /* Bouncing Ball Loader from Uiverse.io */
+          .loader-wrapper {
+            width: 150px;
+            height: 60px;
+            position: relative;
+            z-index: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+          }
+
+          .loader-wrapper .circle {
+            width: 16px;
+            height: 16px;
+            position: absolute;
+            border-radius: 50%;
+            background-color: #34d399;
+            left: 15%;
+            transform-origin: 50%;
+            animation: circle7124 .5s alternate infinite ease;
+          }
+
+          @keyframes circle7124 {
+            0% {
+              top: 40px;
+              height: 4px;
+              border-radius: 50px 50px 25px 25px;
+              transform: scaleX(1.7);
+            }
+
+            40% {
+              height: 16px;
+              border-radius: 50%;
+              transform: scaleX(1);
+            }
+
+            100% {
+              top: 0%;
+            }
+          }
+
+          .loader-wrapper .circle:nth-child(2) {
+            left: 45%;
+            animation-delay: .2s;
+          }
+
+          .loader-wrapper .circle:nth-child(3) {
+            left: auto;
+            right: 15%;
+            animation-delay: .3s;
+          }
+
+          .loader-wrapper .shadow {
+            width: 16px;
+            height: 3px;
+            border-radius: 50%;
+            background-color: rgba(16, 185, 129, 0.4);
+            position: absolute;
+            top: 42px;
+            transform-origin: 50%;
+            z-index: -1;
+            left: 15%;
+            filter: blur(1px);
+            animation: shadow046 .5s alternate infinite ease;
+          }
+
+          @keyframes shadow046 {
+            0% {
+              transform: scaleX(1.5);
+            }
+
+            40% {
+              transform: scaleX(1);
+              opacity: .7;
+            }
+
+            100% {
+              transform: scaleX(.2);
+              opacity: .4;
+            }
+          }
+
+          .loader-wrapper .shadow:nth-child(4) {
+            left: 45%;
+            animation-delay: .2s
+          }
+
+          .loader-wrapper .shadow:nth-child(5) {
+            left: auto;
+            right: 15%;
+            animation-delay: .3s;
+          }
         `}</style>
 
 
@@ -525,10 +643,32 @@ export default function AnalyzePhoto() {
               className={`relative rounded-[20px] transition-all duration-200 w-full min-h-[320px] flex flex-col items-center justify-center p-6 border-2
                 ${previewUrl 
                   ? 'border-transparent bg-slate-900/5 shadow-inner' 
-                  : 'border-dashed border-emerald-300 bg-emerald-50/50 hover:bg-[#10b981]/10 border-solid hover:border-[#10b981] cursor-pointer'
+                  : 'border-dashed border-emerald-300 bg-[#10b981]/5 hover:bg-[#10b981]/10 border-solid hover:border-[#10b981] cursor-pointer'
                 }
               `}
             >
+              {/* Glassmorphic Bouncing Loader Overlay */}
+              {loading && (
+                <div className="absolute inset-0 bg-slate-950/85 backdrop-blur-md rounded-[18px] flex flex-col items-center justify-center z-50 p-6 text-center select-none animate-in fade-in duration-300">
+                  <div className="loader-wrapper mb-6">
+                    <div className="circle"></div>
+                    <div className="circle"></div>
+                    <div className="circle"></div>
+                    <div className="shadow"></div>
+                    <div className="shadow"></div>
+                    <div className="shadow"></div>
+                  </div>
+                  
+                  <div className="space-y-1.5 mt-2 max-w-[280px]">
+                    <h4 className="text-white font-extrabold text-sm md:text-base tracking-wide transition-all duration-300 min-h-[48px] flex items-center justify-center">
+                      {loadingText}
+                    </h4>
+                    <p className="text-[#34d399] text-[10px] font-bold tracking-widest uppercase">
+                      Proses Deteksi Aktif
+                    </p>
+                  </div>
+                </div>
+              )}
               {previewUrl ? (
                 <>
                   <div className="absolute inset-0 rounded-[18px] overflow-hidden">
