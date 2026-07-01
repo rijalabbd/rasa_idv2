@@ -239,6 +239,13 @@ def run_gemini_inference(image_path: str, request_id: str) -> tuple[List[Dict[st
                         time.sleep(wait_time)
                         continue
             break
+        except requests.exceptions.Timeout as e:
+            logger.warning(f"Gemini API request timed out on attempt {attempt+1}: {e}. Aborting retries and falling back to YOLO immediately.")
+            raise AppException(
+                status_code=502,
+                detail="Koneksi ke layanan deteksi gagal atau mengalami timeout.",
+                code="DETECTION_CONNECTION_TIMEOUT"
+            )
         except requests.exceptions.RequestException as e:
             if attempt < max_retries - 1:
                 wait_time = 1
