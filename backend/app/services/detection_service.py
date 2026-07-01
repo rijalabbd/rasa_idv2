@@ -224,8 +224,8 @@ def run_gemini_inference(image_path: str, request_id: str) -> tuple[List[Dict[st
         url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={current_key}"
         
         try:
-            # 5-second hard timeout: if Gemini doesn't respond, we fallback to YOLO
-            response = requests.post(url, headers=headers, json=payload, timeout=5)
+            # 8-second hard timeout: if Gemini doesn't respond, we fallback to YOLO
+            response = requests.post(url, headers=headers, json=payload, timeout=8)
             if response.status_code == 429:
                 if len(api_keys) > 1:
                     logger.warning(f"Gemini API key index {key_index % len(api_keys)} returned 429. Rotating key... (Attempt {attempt+1}/{max_retries})")
