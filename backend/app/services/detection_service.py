@@ -153,8 +153,6 @@ def run_gemini_inference(image_path: str, request_id: str) -> tuple[List[Dict[st
         f"You must ONLY detect objects that match one of the food classes in this allowed list: [{class_list_str}]. "
         "If an object is not in this allowed list, or is a non-food item (like plates, cups, tables, forks, spoons, background), "
         "do NOT detect it. Ignore it completely. "
-        "For each detected item, determine a highly precise bounding box [ymin, xmin, ymax, xmax] normalized on a 0-1000 scale relative to the image boundaries. "
-        "The bounding box must tightly enclose only the specific food item itself, avoiding empty space or adjacent objects. "
         "Verify that every label returned is a strict character match from the allowed list."
     )
 
