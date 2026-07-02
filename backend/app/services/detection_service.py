@@ -497,6 +497,7 @@ def run_claude_inference(image_path: str, request_id: str) -> tuple[List[Dict[st
             text = "\n".join(lines).strip()
             
         raw_items = json.loads(text)
+        logger.info(f"[Claude Raw Response] Request {request_id}: {text}")
     except (KeyError, IndexError, ValueError) as e:
         logger.error(f"Failed to parse Claude response: {e}. Raw response: {response.text}")
         raise AppException(
