@@ -418,12 +418,15 @@ def run_claude_inference(image_path: str, request_id: str) -> tuple[List[Dict[st
         "Response must be strictly in JSON format (an array of objects). Verify that every label returned is a strict character match from the allowed list."
     )
 
-    # 5. Build Claude API payload (Anthropic format)
+    # 5. Build Claude API payload (OpenAI compatible format)
     payload = {
         "model": "gk/claude-sonnet-4.6",
         "max_tokens": 1000,
-        "system": system_prompt,
         "messages": [
+            {
+                "role": "system",
+                "content": system_prompt
+            },
             {
                 "role": "user",
                 "content": [
@@ -432,11 +435,9 @@ def run_claude_inference(image_path: str, request_id: str) -> tuple[List[Dict[st
                         "text": "Identify food items in the image and return JSON coordinates."
                     },
                     {
-                        "type": "image",
-                        "source": {
-                            "type": "base64",
-                            "media_type": "image/jpeg",
-                            "data": img_b64
+                        "type": "image_url",
+                        "image_url": {
+                            "url": f"data:image/jpeg;base64,{img_b64}"
                         }
                     }
                 ]
@@ -447,11 +448,10 @@ def run_claude_inference(image_path: str, request_id: str) -> tuple[List[Dict[st
     start_time = time.perf_counter()
     headers = {
         "Content-Type": "application/json",
-        "x-api-key": settings.CLAUDE_API_KEY.strip(),
-        "anthropic-version": "2023-06-01"
+        "Authorization": f"Bearer {settings.CLAUDE_API_KEY.strip()}"
     }
     
-    url = "https://api.geraikita.com/v1/claude/v1/messages"
+    url = "https://api.geraikita.com/v1/claude/chat/completions"
     
     try:
         response = requests.post(url, headers=headers, json=payload, timeout=settings.DETECT_TIMEOUT_SECONDS or 30)
@@ -475,17 +475,10 @@ def run_claude_inference(image_path: str, request_id: str) -> tuple[List[Dict[st
         
     inference_time_ms = (time.perf_counter() - start_time) * 1000
     
-    # 6. Parse structured JSON from response
+    # 6. Parse structured JSON from response (OpenAI format)
     try:
         res_json = response.json()
-        content_items = res_json.get("content", [])
-        
-        # Find the text content block
-        text = ""
-        for item in content_items:
-            if item.get("type") == "text":
-                text = item.get("text", "").strip()
-                break
+        text = res_json["choices"][0]["message"]["content"].strip()
                 
         # Clean markdown json indicators if present
         if text.startswith("```"):
