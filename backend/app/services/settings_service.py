@@ -23,7 +23,7 @@ def get_settings() -> dict:
             # Ensure valid mode
             if not isinstance(data, dict):
                 data = {}
-            if data.get("detection_mode") not in ("YOLO", "GEMINI"):
+            if data.get("detection_mode") not in ("YOLO", "GEMINI", "CLAUDE"):
                 data["detection_mode"] = "YOLO"
             return data
     except Exception as e:
@@ -35,7 +35,7 @@ def save_settings(data: dict) -> None:
     path = _get_settings_file_path()
     # Normalize input
     detection_mode = data.get("detection_mode", "YOLO")
-    if detection_mode not in ("YOLO", "GEMINI"):
+    if detection_mode not in ("YOLO", "GEMINI", "CLAUDE"):
         detection_mode = "YOLO"
         
     payload = {

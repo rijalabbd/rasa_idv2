@@ -22,6 +22,9 @@ class Settings(BaseSettings):
     # Gemini API
     GEMINI_API_KEY: str | None = None
     
+    # Claude API (via Geraikita gateway)
+    CLAUDE_API_KEY: str | None = None
+    
     # Reliability & Limits
     MAX_UPLOAD_SIZE: int = 10 * 1024 * 1024  # 10MB default
     DETECT_TIMEOUT_SECONDS: int = 30

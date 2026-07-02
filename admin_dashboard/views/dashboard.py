@@ -295,16 +295,25 @@ def render_dashboard():
         
         if settings_data:
             curr_mode = settings_data.get("detection_mode", "YOLO")
-            has_key = settings_data.get("has_gemini_key", False)
+            has_gemini = settings_data.get("has_gemini_key", False)
+            has_claude = settings_data.get("has_claude_key", False)
             
             mode_col1, mode_col2 = st.columns([3, 1])
             
             with mode_col1:
                 mode_options = {
                     "YOLO": "YOLO (Model Lokal - Cepat & Luring)",
-                    "GEMINI": "Cloud API (Multimodal - Dinamis & Cerdas)"
+                    "GEMINI": "Gemini API (Cloud - Dinamis & Cerdas)",
+                    "CLAUDE": "Claude API (Cloud - Cerdas & Presisi)"
                 }
-                idx = 0 if curr_mode == "YOLO" else 1
+                
+                # Determine active index safely
+                if curr_mode == "GEMINI":
+                    idx = 1
+                elif curr_mode == "CLAUDE":
+                    idx = 2
+                else:
+                    idx = 0
                 
                 selected_mode = st.radio(
                     "Pilih Mode Deteksi Aktif:",
@@ -316,10 +325,15 @@ def render_dashboard():
                 )
                 
                 if selected_mode == "GEMINI":
-                    if not has_key:
-                        st.error("⚠️ **Peringatan:** Kunci API Cloud tidak terdeteksi di server. Mode ini tidak akan berfungsi sebelum kunci API ditambahkan.")
+                    if not has_gemini:
+                        st.error("⚠️ **Peringatan:** `GEMINI_API_KEY` tidak terdeteksi di server. Mode ini tidak akan berfungsi sebelum kunci API ditambahkan.")
                     else:
-                        st.success("✅ Kunci API Cloud terkonfigurasi di server. Siap digunakan.")
+                        st.success("✅ `GEMINI_API_KEY` terkonfigurasi di server. Siap digunakan.")
+                elif selected_mode == "CLAUDE":
+                    if not has_claude:
+                        st.error("⚠️ **Peringatan:** `CLAUDE_API_KEY` tidak terdeteksi di server. Mode ini tidak akan berfungsi sebelum kunci API ditambahkan.")
+                    else:
+                        st.success("✅ `CLAUDE_API_KEY` terkonfigurasi di server (Geraikita). Siap digunakan.")
                 else:
                     st.info("ℹ️ Mode YOLO menggunakan model lokal `active.pt` yang diunggah di atas.")
                     

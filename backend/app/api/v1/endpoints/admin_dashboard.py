@@ -128,7 +128,8 @@ async def get_admin_settings():
     current_settings = settings_service.get_settings()
     return {
         "detection_mode": current_settings.get("detection_mode", "YOLO"),
-        "has_gemini_key": bool(settings.GEMINI_API_KEY and settings.GEMINI_API_KEY.strip())
+        "has_gemini_key": bool(settings.GEMINI_API_KEY and settings.GEMINI_API_KEY.strip()),
+        "has_claude_key": bool(settings.CLAUDE_API_KEY and settings.CLAUDE_API_KEY.strip())
     }
 
 @router.post("/settings")
@@ -140,10 +141,10 @@ async def update_admin_settings(
 ):
     """Update admin settings (detection mode)."""
     audit = AuditService(db)
-    if payload.detection_mode not in ("YOLO", "GEMINI"):
+    if payload.detection_mode not in ("YOLO", "GEMINI", "CLAUDE"):
         raise AppException(
             status_code=400,
-            detail="Invalid detection mode. Supported modes are 'YOLO' and 'GEMINI'.",
+            detail="Invalid detection mode. Supported modes are 'YOLO', 'GEMINI', and 'CLAUDE'.",
             code="INVALID_DETECTION_MODE"
         )
     
