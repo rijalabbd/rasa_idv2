@@ -67,6 +67,7 @@ services:
       APP_ENV: production
       GEMINI_API_KEY: ${GEMINI_API_KEY}
       CLAUDE_API_KEY: ${CLAUDE_API_KEY}
+      MIMO_API_KEY: ${MIMO_API_KEY}
 
     ports:
       - "8000:8000"
