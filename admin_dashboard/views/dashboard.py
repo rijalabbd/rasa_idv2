@@ -297,6 +297,7 @@ def render_dashboard():
             curr_mode = settings_data.get("detection_mode", "YOLO")
             has_gemini = settings_data.get("has_gemini_key", False)
             has_claude = settings_data.get("has_claude_key", False)
+            has_mimo = settings_data.get("has_mimo_key", False)
             
             mode_col1, mode_col2 = st.columns([3, 1])
             
@@ -304,7 +305,8 @@ def render_dashboard():
                 mode_options = {
                     "YOLO": "YOLO (Model Lokal - Cepat & Luring)",
                     "GEMINI": "Gemini API (Cloud - Dinamis & Cerdas)",
-                    "CLAUDE": "Claude API (Cloud - Cerdas & Presisi)"
+                    "CLAUDE": "Claude API (Cloud - Cerdas & Presisi)",
+                    "MIMO": "Mimo API (Cloud - Multimodal)"
                 }
                 
                 # Determine active index safely
@@ -312,6 +314,8 @@ def render_dashboard():
                     idx = 1
                 elif curr_mode == "CLAUDE":
                     idx = 2
+                elif curr_mode == "MIMO":
+                    idx = 3
                 else:
                     idx = 0
                 
@@ -334,6 +338,11 @@ def render_dashboard():
                         st.error("⚠️ **Peringatan:** `CLAUDE_API_KEY` tidak terdeteksi di server. Mode ini tidak akan berfungsi sebelum kunci API ditambahkan.")
                     else:
                         st.success("✅ `CLAUDE_API_KEY` terkonfigurasi di server (Geraikita). Siap digunakan.")
+                elif selected_mode == "MIMO":
+                    if not has_mimo:
+                        st.error("⚠️ **Peringatan:** `MIMO_API_KEY` tidak terdeteksi di server. Mode ini tidak akan berfungsi sebelum kunci API ditambahkan.")
+                    else:
+                        st.success("✅ `MIMO_API_KEY` terkonfigurasi di server (cutad-agent). Siap digunakan.")
                 else:
                     st.info("ℹ️ Mode YOLO menggunakan model lokal `active.pt` yang diunggah di atas.")
                     

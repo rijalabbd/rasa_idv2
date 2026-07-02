@@ -25,6 +25,9 @@ class Settings(BaseSettings):
     # Claude API (via Geraikita gateway)
     CLAUDE_API_KEY: str | None = None
     
+    # Mimo API Key (via mimo.lokerin.net)
+    MIMO_API_KEY: str | None = None
+    
     # Reliability & Limits
     MAX_UPLOAD_SIZE: int = 10 * 1024 * 1024  # 10MB default
     DETECT_TIMEOUT_SECONDS: int = 30
