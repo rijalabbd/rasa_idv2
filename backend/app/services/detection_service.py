@@ -416,7 +416,7 @@ def run_claude_inference(image_path: str, request_id: str) -> tuple[List[Dict[st
         "- 'confidence': number from 0.0 to 1.0 "
         "- 'bbox': array of EXACTLY 4 integers [ymin, xmin, ymax, xmax] normalized on a 0-1000 scale. "
         "Be extremely precise: each bounding box must tightly enclose ONLY that specific food item without overlapping surrounding objects. "
-        "Response must be strictly in JSON format (an array of objects). Verify that every label returned is a strict character match from the allowed list."
+        "CRITICAL: Do NOT write any conversational text, introductory remarks, markdown code blocks, or explanatory notes. Start your output IMMEDIATELY with '[' and end with ']'. Output ONLY the raw JSON array of objects. Verify that every label returned is a strict character match from the allowed list."
     )
 
     # 5. Build Claude API payload (OpenAI compatible format)
