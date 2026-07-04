@@ -95,7 +95,6 @@ export default function AnalyzePhoto() {
   const [analysisId, setAnalysisId] = useState(null);
   const [detectionItems, setDetectionItems] = useState([]);
   const [detailsOpen, setDetailsOpen] = useState({}); // To mock the "Lihat Detail" toggle
-  const [e2eMetrics, setE2eMetrics] = useState(null);
   
   const totalNutrition = useMemo(() =>
     detectionItems.length > 0 ? calculateTotalNutrition(detectionItems) : null,
@@ -198,15 +197,8 @@ export default function AnalyzePhoto() {
   const handleAnalyze = async () => {
     if (!selectedFile) return;
     setLoading(true); setError(null);
-    const t0 = performance.now();
     try {
       const result = await detectFood(selectedFile);
-      const elapsedMs = Math.round(performance.now() - t0);
-      setE2eMetrics({
-        e2eSec: (elapsedMs / 1000).toFixed(2),
-        backendSec: (result.inference_time_ms / 1000).toFixed(2),
-        model: result.model_version || 'AI Model'
-      });
       const newAnalysisId = result?.analysis_id ?? null;
       setAnalysisId(newAnalysisId);
       if (!Array.isArray(result?.items)) throw new Error(TOAST_MESSAGES.INVALID_SCHEMA);
@@ -812,19 +804,6 @@ export default function AnalyzePhoto() {
                     <div className="bg-black/40 backdrop-blur-md text-white/70 text-[9px] font-bold px-2 py-1 rounded-md border border-white/10 uppercase tracking-widest">
                       {detectionItems.length > 0 ? `${detectionItems.length} objek` : 'Foto Asli'}
                     </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Precision E2E Timer Badge (Benchmark) */}
-              {e2eMetrics && (
-                <div className="mb-5 p-3.5 rounded-2xl bg-gradient-to-r from-emerald-500/10 via-teal-500/10 to-indigo-500/10 border border-emerald-500/20 shadow-xs flex flex-wrap items-center justify-between gap-2 text-xs font-semibold text-slate-700 animate-in fade-in slide-in-from-bottom-2 duration-500">
-                  <div className="flex items-center gap-2">
-                    <span className="text-base">⏱️</span>
-                    <span><strong>Total Waktu E2E (Frontend):</strong> <span className="text-emerald-700 font-extrabold text-sm">{e2eMetrics.e2eSec}s</span></span>
-                  </div>
-                  <div className="text-[11px] text-slate-600 bg-white/90 px-2.5 py-1 rounded-lg border border-slate-200/80 shadow-2xs font-mono">
-                    AI Backend: {e2eMetrics.backendSec}s | Model: {e2eMetrics.model}
                   </div>
                 </div>
               )}

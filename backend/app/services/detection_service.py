@@ -802,11 +802,18 @@ def process_detection(
             raw_detections, inference_ms = run_gemini_inference(image_path, request_id)
             model_version_str = "gemini-2.5-flash"
         except Exception as gemini_err:
-            # Gemini failed — silently fallback to YOLO so the user never sees an error
-            logger.warning(f"Gemini inference failed ({type(gemini_err).__name__}: {gemini_err}). Falling back to YOLO.")
-            raw_detections, inference_ms = run_yolo_inference(image_path, request_id)
-            model_version_str = model_status.get("active_model") or "yolo-fallback"
-            used_fallback = True
+            # Gemini failed — try Claude first before falling back to YOLO
+            logger.warning(f"Gemini inference failed ({type(gemini_err).__name__}: {gemini_err}). Fallback Tier 1: Trying Claude API...")
+            try:
+                raw_detections, inference_ms = run_claude_inference(image_path, request_id)
+                model_version_str = "claude-sonnet-4.6 (fallback)"
+                used_fallback = True
+            except Exception as claude_err:
+                # Both Gemini and Claude failed — Fallback Tier 2: YOLO
+                logger.warning(f"Claude fallback inference failed ({type(claude_err).__name__}: {claude_err}). Fallback Tier 2: Trying local YOLO...")
+                raw_detections, inference_ms = run_yolo_inference(image_path, request_id)
+                model_version_str = model_status.get("active_model") or "yolo-fallback"
+                used_fallback = True
     elif det_mode == "CLAUDE":
         try:
             raw_detections, inference_ms = run_claude_inference(image_path, request_id)
