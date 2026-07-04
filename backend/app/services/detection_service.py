@@ -894,6 +894,7 @@ def process_detection(
     return DetectionResponse(
         analysis_id=analysis.id,
         inference_time_ms=round(inference_ms, 2),
+        model_version=model_version_str,
         items=detection_items
     )
 

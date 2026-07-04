@@ -27,6 +27,7 @@ class DetectionResponse(BaseModel):
     """Complete detection response."""
     analysis_id: int
     inference_time_ms: float
+    model_version: Optional[str] = None
     items: List[DetectionItem] = []  # Always list, default empty
     
     class Config:
