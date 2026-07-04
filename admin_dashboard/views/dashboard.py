@@ -337,7 +337,7 @@ def render_dashboard():
                     if not has_claude:
                         st.error("⚠️ **Peringatan:** `CLAUDE_API_KEY` tidak terdeteksi di server. Mode ini tidak akan berfungsi sebelum kunci API ditambahkan.")
                     else:
-                        st.success("✅ `CLAUDE_API_KEY` terkonfigurasi di server (Geraikita). Siap digunakan.")
+                        st.success("✅ `CLAUDE_API_KEY` terkonfigurasi di server (ai.livscene.com). Siap digunakan.")
                 elif selected_mode == "MIMO":
                     if not has_mimo:
                         st.error("⚠️ **Peringatan:** `MIMO_API_KEY` tidak terdeteksi di server. Mode ini tidak akan berfungsi sebelum kunci API ditambahkan.")

@@ -420,7 +420,7 @@ def run_claude_inference(image_path: str, request_id: str) -> tuple[List[Dict[st
 
     # 5. Build Claude API payload (OpenAI compatible format)
     payload = {
-        "model": "gk/claude-sonnet-4.6",
+        "model": "claude-sonnet-4-6",
         "max_tokens": 1000,
         "messages": [
             {
@@ -451,7 +451,7 @@ def run_claude_inference(image_path: str, request_id: str) -> tuple[List[Dict[st
         "Authorization": f"Bearer {settings.CLAUDE_API_KEY.strip()}"
     }
     
-    url = "https://api.geraikita.com/v1/claude/chat/completions"
+    url = "https://ai.livscene.com/v1/chat/completions"
     
     try:
         response = requests.post(url, headers=headers, json=payload, timeout=settings.DETECT_TIMEOUT_SECONDS or 30)
