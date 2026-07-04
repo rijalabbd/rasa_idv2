@@ -414,7 +414,8 @@ def run_claude_inference(image_path: str, request_id: str) -> tuple[List[Dict[st
         "For each food item detected, return a JSON object with: "
         "- 'label': string matching the allowed list "
         "- 'confidence': number from 0.0 to 1.0 "
-        "- 'bbox': normalized bounding box coordinates [ymin, xmin, ymax, xmax] on a 0-1000 scale. "
+        "- 'bbox': array of EXACTLY 4 integers [ymin, xmin, ymax, xmax] normalized on a 0-1000 scale. "
+        "Be extremely precise: each bounding box must tightly enclose ONLY that specific food item without overlapping surrounding objects. "
         "Response must be strictly in JSON format (an array of objects). Verify that every label returned is a strict character match from the allowed list."
     )
 
@@ -527,6 +528,10 @@ def run_claude_inference(image_path: str, request_id: str) -> tuple[List[Dict[st
                 # Exact label case from model classes
                 matched_label = next(c["name"] for c in active_classes if c["name"].lower() == label)
                 
+                if len(bbox) == 3:
+                    ymin, xmin, val3 = bbox
+                    bbox = [ymin, xmin, 980, val3 if val3 > xmin else 1000]
+
                 if len(bbox) == 4:
                     ymin, xmin, ymax, xmax = bbox
                     # Convert normalized 0-1000 to original pixel coordinates
