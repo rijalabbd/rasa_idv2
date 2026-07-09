@@ -93,6 +93,36 @@ def test_claude(key):
     except Exception as e:
         return (time.perf_counter() - t0) * 1000, str(e)
 
+def test_mimo(key):
+    url = "https://mimo.lokerin.net/v1/chat/completions"
+    payload = {
+        "model": "cutad-agent",
+        "max_tokens": 1000,
+        "messages": [
+            {"role": "system", "content": system_prompt},
+            {
+                "role": "user",
+                "content": [
+                    {"type": "text", "text": "Identify food items in the image and return JSON coordinates."},
+                    {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{img_b64}"}}
+                ]
+            }
+        ]
+    }
+    headers = {
+        "Content-Type": "application/json",
+        "Authorization": f"Bearer {key}"
+    }
+    t0 = time.perf_counter()
+    try:
+        res = requests.post(url, headers=headers, json=payload, timeout=25)
+        dt = (time.perf_counter() - t0) * 1000
+        if res.status_code != 200:
+            return dt, f"Error {res.status_code}: {res.text[:200]}"
+        return dt, "200 OK"
+    except Exception as e:
+        return (time.perf_counter() - t0) * 1000, str(e)
+
 # Run Gemini benchmark on all keys
 print("=== Running Gemini Latency Benchmark on All Keys ===")
 for idx, key in enumerate(gemini_keys):
@@ -108,6 +138,15 @@ for i in range(3):
     print(f"Run {i+1}...")
     dt, status = test_claude(claude_key)
     claude_results.append(dt)
+    print(f"  Duration: {dt:.2f}ms, Result: {status}")
+    if i < 2:
+        time.sleep(2.0)
+
+# Run Mimo benchmark (3 Runs)
+print("\n=== Running Mimo Latency Benchmark (3 Runs, 2s gap) ===")
+for i in range(3):
+    print(f"Run {i+1}...")
+    dt, status = test_mimo(mimo_key)
     print(f"  Duration: {dt:.2f}ms, Result: {status}")
     if i < 2:
         time.sleep(2.0)
