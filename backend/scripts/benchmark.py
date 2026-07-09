@@ -50,9 +50,15 @@ def test_gemini(key):
     try:
         res = requests.post(url, json=payload, timeout=20)
         dt = (time.perf_counter() - t0) * 1000
+        # Only print error if it fails
         if res.status_code != 200:
-            print(f"  [Gemini Debug] Status {res.status_code}: {res.text}")
-        return dt, res.status_code
+            err_msg = ""
+            try:
+                err_msg = res.json().get("error", {}).get("message", "")
+            except:
+                err_msg = res.text[:200]
+            return dt, f"Error {res.status_code}: {err_msg}"
+        return dt, "200 OK"
     except Exception as e:
         return (time.perf_counter() - t0) * 1000, str(e)
 
@@ -72,28 +78,28 @@ def test_claude(key):
             }
         ]
     }
-    headers = {"Content-Type": "application/json", "Authorization": f"Bearer {key}"}
+    headers = {
+        "Content-Type": "application/json",
+        "Authorization": f"Bearer {key}",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+    }
     t0 = time.perf_counter()
     try:
         res = requests.post(url, headers=headers, json=payload, timeout=25)
         dt = (time.perf_counter() - t0) * 1000
         if res.status_code != 200:
-            print(f"  [Claude Debug] Status {res.status_code}: {res.text}")
-        return dt, res.status_code
+            return dt, f"Error {res.status_code}: {res.text[:200]}"
+        return dt, "200 OK"
     except Exception as e:
         return (time.perf_counter() - t0) * 1000, str(e)
 
-# Run Gemini benchmark (5 Runs)
-print("=== Running Gemini Latency Benchmark (5 Runs, 2s gap) ===")
-gemini_results = []
-key = gemini_keys[0] if gemini_keys else ""
-for i in range(5):
-    print(f"Run {i+1}...")
+# Run Gemini benchmark on all keys
+print("=== Running Gemini Latency Benchmark on All Keys ===")
+for idx, key in enumerate(gemini_keys):
+    print(f"Testing Key Index {idx} ({key[:10]}...)...")
     dt, status = test_gemini(key)
-    gemini_results.append(dt)
-    print(f"  Duration: {dt:.2f}ms, Status: {status}")
-    if i < 4:
-        time.sleep(2.0)
+    print(f"  Duration: {dt:.2f}ms, Result: {status}")
+    time.sleep(1.0)
 
 # Run Claude benchmark (3 Runs)
 print("\n=== Running Claude Latency Benchmark (3 Runs, 2s gap) ===")
@@ -102,18 +108,14 @@ for i in range(3):
     print(f"Run {i+1}...")
     dt, status = test_claude(claude_key)
     claude_results.append(dt)
-    print(f"  Duration: {dt:.2f}ms, Status: {status}")
+    print(f"  Duration: {dt:.2f}ms, Result: {status}")
     if i < 2:
         time.sleep(2.0)
 
 # Run simulated Fallback Chain (1 Run)
-# Tier 1: Gemini Fail (triggers error immediately)
-# Tier 2: Claude succeeds
 print("\n=== Running Fallback Chain Simulation ===")
 print("Simulating Gemini connection error, falling back to Claude...")
-t_start = time.perf_counter()
-# Simulating Gemini failure took 50ms to detect/timeout
 t_gemini_fail = 50.0 
 dt_claude, status_claude = test_claude(claude_key)
 total_fallback_ms = t_gemini_fail + dt_claude
-print(f"Fallback path GEMINI -> CLAUDE completed in {total_fallback_ms:.2f}ms (Claude Status: {status_claude})")
+print(f"Fallback path GEMINI -> CLAUDE completed in {total_fallback_ms:.2f}ms (Claude Result: {status_claude})")
