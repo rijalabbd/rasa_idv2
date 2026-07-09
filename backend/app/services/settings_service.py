@@ -23,8 +23,12 @@ def get_settings() -> dict:
             # Ensure valid mode
             if not isinstance(data, dict):
                 data = {}
-            if data.get("detection_mode") not in ("YOLO", "GEMINI", "CLAUDE", "MIMO"):
-                data["detection_mode"] = "YOLO"
+            mode = data.get("detection_mode")
+            if mode in ("CLAUDE", "MIMO"):
+                mode = "MISTRAL"
+            if mode not in ("YOLO", "GEMINI", "MISTRAL"):
+                mode = "YOLO"
+            data["detection_mode"] = mode
             return data
     except Exception as e:
         logger.warning(f"Failed to read settings file: {e}. Falling back to default.")
@@ -35,7 +39,9 @@ def save_settings(data: dict) -> None:
     path = _get_settings_file_path()
     # Normalize input
     detection_mode = data.get("detection_mode", "YOLO")
-    if detection_mode not in ("YOLO", "GEMINI", "CLAUDE", "MIMO"):
+    if detection_mode in ("CLAUDE", "MIMO"):
+        detection_mode = "MISTRAL"
+    if detection_mode not in ("YOLO", "GEMINI", "MISTRAL"):
         detection_mode = "YOLO"
         
     payload = {

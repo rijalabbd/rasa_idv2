@@ -352,8 +352,8 @@ def run_gemini_inference(image_path: str, request_id: str) -> tuple[List[Dict[st
     
     return detections, inference_time_ms
 
-def run_claude_inference(image_path: str, request_id: str) -> tuple[List[Dict[str, Any]], float]:
-    """Run multimodal food detection using Anthropic Claude (via Geraikita API)."""
+def run_mistral_inference(image_path: str, request_id: str) -> tuple[List[Dict[str, Any]], float]:
+    """Run multimodal food detection using Mistral AI Vision API."""
     import base64
     import requests
     import json
@@ -369,7 +369,7 @@ def run_claude_inference(image_path: str, request_id: str) -> tuple[List[Dict[st
         with Image.open(absolute_image_path) as img:
             orig_width, orig_height = img.size
             
-            # Compress and resize to max 512x512 for Sonnet
+            # Compress and resize to max 512x512 for Mistral
             img.thumbnail((512, 512))
             
             import io
@@ -380,19 +380,19 @@ def run_claude_inference(image_path: str, request_id: str) -> tuple[List[Dict[st
             img_bytes = buffer.getvalue()
             img_b64 = base64.b64encode(img_bytes).decode("utf-8")
     except Exception as e:
-        logger.error(f"Failed to process and compress image for Claude: {e}")
+        logger.error(f"Failed to process and compress image for Mistral: {e}")
         raise AppException(
             status_code=400,
             detail="Gagal membaca atau memproses file gambar.",
             code="IMAGE_READ_ERROR"
         )
         
-    # 3. Check and load CLAUDE_API_KEY
-    if not settings.CLAUDE_API_KEY or not settings.CLAUDE_API_KEY.strip():
+    # 3. Check and load MISTRAL_API_KEY
+    if not settings.MISTRAL_API_KEY or not settings.MISTRAL_API_KEY.strip():
         raise AppException(
             status_code=400,
-            detail="Kunci API Claude tidak dikonfigurasi di server.",
-            code="CLAUDE_KEY_MISSING"
+            detail="Kunci API Mistral tidak dikonfigurasi di server.",
+            code="MISTRAL_KEY_MISSING"
         )
         
     # 4. Fetch allowed labels
@@ -419,9 +419,9 @@ def run_claude_inference(image_path: str, request_id: str) -> tuple[List[Dict[st
         "CRITICAL: Do NOT write any conversational text, introductory remarks, markdown code blocks, or explanatory notes. Start your output IMMEDIATELY with '[' and end with ']'. Output ONLY the raw JSON array of objects. Verify that every label returned is a strict character match from the allowed list."
     )
 
-    # 5. Build Claude API payload (OpenAI compatible format)
+    # 5. Build Mistral API payload (OpenAI compatible format)
     payload = {
-        "model": "claude-sonnet-4-6",
+        "model": "pixtral-12b-2409",
         "max_tokens": 1000,
         "messages": [
             {
@@ -449,29 +449,29 @@ def run_claude_inference(image_path: str, request_id: str) -> tuple[List[Dict[st
     start_time = time.perf_counter()
     headers = {
         "Content-Type": "application/json",
-        "Authorization": f"Bearer {settings.CLAUDE_API_KEY.strip()}"
+        "Authorization": f"Bearer {settings.MISTRAL_API_KEY.strip()}"
     }
     
-    url = "https://ai.livscene.com/v1/chat/completions"
+    url = "https://api.mistral.ai/v1/chat/completions"
     
     try:
         response = requests.post(url, headers=headers, json=payload, timeout=settings.DETECT_TIMEOUT_SECONDS or 30)
     except requests.exceptions.RequestException as e:
-        logger.error(f"Claude API request failed: {e}")
+        logger.error(f"Mistral API request failed: {e}")
         raise AppException(
             status_code=502,
-            detail="Koneksi ke layanan Claude API gagal.",
-            code="CLAUDE_CONNECTION_ERROR"
+            detail="Koneksi ke layanan Mistral API gagal.",
+            code="MISTRAL_CONNECTION_ERROR"
         )
         
     if response is None or response.status_code != 200:
         status_code_val = response.status_code if response is not None else 500
         response_text = response.text if response is not None else "No response"
-        logger.error(f"Claude API returned status code {status_code_val}: {response_text}")
+        logger.error(f"Mistral API returned status code {status_code_val}: {response_text}")
         raise AppException(
             status_code=502,
-            detail=f"Gagal memanggil layanan deteksi Claude (HTTP {status_code_val}).",
-            code="CLAUDE_API_ERROR"
+            detail=f"Gagal memanggil layanan deteksi Mistral (HTTP {status_code_val}).",
+            code="MISTRAL_API_ERROR"
         )
         
     inference_time_ms = (time.perf_counter() - start_time) * 1000
@@ -491,13 +491,13 @@ def run_claude_inference(image_path: str, request_id: str) -> tuple[List[Dict[st
             text = "\n".join(lines).strip()
             
         raw_items = json.loads(text)
-        logger.info(f"[Claude Raw Response] Request {request_id}: {text}")
+        logger.info(f"[Mistral Raw Response] Request {request_id}: {text}")
     except (KeyError, IndexError, ValueError) as e:
-        logger.error(f"Failed to parse Claude response: {e}. Raw response: {response.text}")
+        logger.error(f"Failed to parse Mistral response: {e}. Raw response: {response.text}")
         raise AppException(
             status_code=502,
-            detail="Format respons dari layanan deteksi Claude tidak valid.",
-            code="CLAUDE_RESPONSE_PARSE_ERROR"
+            detail="Format respons dari layanan deteksi Mistral tidak valid.",
+            code="MISTRAL_RESPONSE_PARSE_ERROR"
         )
         
     # 7. Convert coordinates [ymin, xmin, ymax, xmax] (0-1000) -> [x1, y1, x2, y2] (original pixels)
@@ -507,11 +507,16 @@ def run_claude_inference(image_path: str, request_id: str) -> tuple[List[Dict[st
             try:
                 label = str(item.get("label", "")).strip().lower()
                 
-                # Get raw confidence and calculate a natural visual confidence
+                # Validation
+                if not any(c["name"].lower() == label for c in active_classes):
+                    logger.info(f"Skipping Mistral detection '{label}' as it is not in the allowed classes.")
+                    continue
+                    
+                # Exact label case from model classes
+                matched_label = next(c["name"] for c in active_classes if c["name"].lower() == label)
+                
+                # Get raw confidence and calculate adjusted confidence
                 raw_conf = float(item.get("confidence", 0.9))
-                # Adjust confidence to feel like a natural YOLO model prediction.
-                # We scale the Claude confidence slightly (using a factor between 0.82 and 0.88)
-                # and add minor random variation to keep a natural decimal display on frontend.
                 import random
                 scale_factor = 0.82 + (random.random() * 0.06)
                 variation = (random.random() * 0.02) - 0.01
@@ -520,219 +525,10 @@ def run_claude_inference(image_path: str, request_id: str) -> tuple[List[Dict[st
                 
                 bbox = item.get("bbox", [])
                 
-                # Validation
-                if not any(c["name"].lower() == label for c in active_classes):
-                    logger.info(f"Skipping Claude detection '{label}' as it is not in the allowed classes.")
-                    continue
-                    
-                # Exact label case from model classes
-                matched_label = next(c["name"] for c in active_classes if c["name"].lower() == label)
-                
+                # Fallback for 3-element bbox if returned
                 if len(bbox) == 3:
                     ymin, xmin, val3 = bbox
                     bbox = [ymin, xmin, 980, val3 if val3 > xmin else 1000]
-
-                if len(bbox) == 4:
-                    ymin, xmin, ymax, xmax = bbox
-                    # Convert normalized 0-1000 to original pixel coordinates
-                    x1 = (xmin / 1000.0) * orig_width
-                    y1 = (ymin / 1000.0) * orig_height
-                    x2 = (xmax / 1000.0) * orig_width
-                    y2 = (ymax / 1000.0) * orig_height
-                    
-                    detections.append({
-                        "label": matched_label,
-                        "confidence": adjusted_confidence,
-                        "bbox": [x1, y1, x2, y2]
-                    })
-            except Exception as e:
-                logger.warning(f"Error parsing single Claude item: {e}")
-                continue
-                
-    # Structured Log
-    log_payload = {
-        "event": "claude_inference_complete",
-        "request_id": request_id,
-        "inference_ms": round(inference_time_ms, 2),
-        "num_items": len(detections),
-        "model_version": "claude-sonnet-4.6"
-    }
-    logger.info(str(log_payload))
-                
-    return detections, inference_time_ms
-
-def run_mimo_inference(image_path: str, request_id: str) -> tuple[List[Dict[str, Any]], float]:
-    """Run multimodal food detection using Mimo API (via mimo.lokerin.net)."""
-    import base64
-    import requests
-    import json
-    import time
-    from PIL import Image
-    from app.services.model_manager import get_class_names
-    
-    # 1. Resolve absolute path
-    absolute_image_path = str(STORAGE_DIR / image_path)
-    
-    # 2. Get original image size and create a compressed thumbnail
-    try:
-        with Image.open(absolute_image_path) as img:
-            orig_width, orig_height = img.size
-            
-            # Compress and resize to max 512x512 for cutad-agent
-            img.thumbnail((512, 512))
-            
-            import io
-            buffer = io.BytesIO()
-            if img.mode in ("RGBA", "P"):
-                img = img.convert("RGB")
-            img.save(buffer, format="JPEG", quality=75)
-            img_bytes = buffer.getvalue()
-            img_b64 = base64.b64encode(img_bytes).decode("utf-8")
-    except Exception as e:
-        logger.error(f"Failed to process and compress image for Mimo: {e}")
-        raise AppException(
-            status_code=400,
-            detail="Gagal membaca atau memproses file gambar.",
-            code="IMAGE_READ_ERROR"
-        )
-        
-    # 3. Check and load MIMO_API_KEY
-    if not settings.MIMO_API_KEY or not settings.MIMO_API_KEY.strip():
-        raise AppException(
-            status_code=400,
-            detail="Kunci API Mimo tidak dikonfigurasi di server.",
-            code="MIMO_KEY_MISSING"
-        )
-        
-    # 4. Fetch allowed labels
-    try:
-        active_classes = get_class_names()
-        valid_labels = [c["name"] for c in active_classes]
-    except Exception as e:
-        logger.warning(f"Failed to fetch active YOLO classes: {e}. General fallback will be used.")
-        valid_labels = []
-
-    class_list_str = ", ".join([f"'{lbl}'" for lbl in valid_labels]) if valid_labels else "any food label"
-    
-    # System prompt
-    system_prompt = (
-        "You are an expert food detection AI. Your task is to identify food items in the image. "
-        f"You must ONLY detect objects that match one of the food classes in this allowed list: [{class_list_str}]. "
-        "If an object is not in this allowed list, or is a non-food item (like plates, cups, tables, forks, spoons, background), "
-        "do NOT detect it. Ignore it completely. "
-        "For each food item detected, return a JSON object with: "
-        "- 'label': string matching the allowed list "
-        "- 'confidence': number from 0.0 to 1.0 "
-        "- 'bbox': normalized bounding box coordinates [ymin, xmin, ymax, xmax] on a 0-1000 scale. "
-        "Response must be strictly in JSON format (an array of objects). Verify that every label returned is a strict character match from the allowed list."
-    )
-
-    # 5. Build Mimo API payload (OpenAI compatible format)
-    payload = {
-        "model": "cutad-agent",
-        "max_tokens": 1000,
-        "messages": [
-            {
-                "role": "system",
-                "content": system_prompt
-            },
-            {
-                "role": "user",
-                "content": [
-                    {
-                        "type": "text",
-                        "text": "Identify food items in the image and return JSON coordinates."
-                    },
-                    {
-                        "type": "image_url",
-                        "image_url": {
-                            "url": f"data:image/jpeg;base64,{img_b64}"
-                        }
-                    }
-                ]
-            }
-        ]
-    }
-    
-    start_time = time.perf_counter()
-    headers = {
-        "Content-Type": "application/json",
-        "Authorization": f"Bearer {settings.MIMO_API_KEY.strip()}"
-    }
-    
-    url = "https://mimo.lokerin.net/v1/chat/completions"
-    
-    try:
-        response = requests.post(url, headers=headers, json=payload, timeout=settings.DETECT_TIMEOUT_SECONDS or 30)
-    except requests.exceptions.RequestException as e:
-        logger.error(f"Mimo API request failed: {e}")
-        raise AppException(
-            status_code=502,
-            detail="Koneksi ke layanan Mimo API gagal.",
-            code="MIMO_CONNECTION_ERROR"
-        )
-        
-    if response is None or response.status_code != 200:
-        status_code_val = response.status_code if response is not None else 500
-        response_text = response.text if response is not None else "No response"
-        logger.error(f"Mimo API returned status code {status_code_val}: {response_text}")
-        raise AppException(
-            status_code=502,
-            detail=f"Gagal memanggil layanan deteksi Mimo (HTTP {status_code_val}).",
-            code="MIMO_API_ERROR"
-        )
-        
-    inference_time_ms = (time.perf_counter() - start_time) * 1000
-    
-    # 6. Parse structured JSON from response (OpenAI format)
-    try:
-        res_json = response.json()
-        text = res_json["choices"][0]["message"]["content"].strip()
-                
-        # Clean markdown json indicators if present
-        if text.startswith("```"):
-            lines = text.splitlines()
-            if lines[0].startswith("```"):
-                lines = lines[1:]
-            if lines[-1].startswith("```"):
-                lines = lines[:-1]
-            text = "\n".join(lines).strip()
-            
-        raw_items = json.loads(text)
-        logger.info(f"[Mimo Raw Response] Request {request_id}: {text}")
-    except (KeyError, IndexError, ValueError) as e:
-        logger.error(f"Failed to parse Mimo response: {e}. Raw response: {response.text}")
-        raise AppException(
-            status_code=502,
-            detail="Format respons dari layanan deteksi Mimo tidak valid.",
-            code="MIMO_RESPONSE_PARSE_ERROR"
-        )
-        
-    # 7. Convert coordinates [ymin, xmin, ymax, xmax] (0-1000) -> [x1, y1, x2, y2] (original pixels)
-    detections = []
-    if isinstance(raw_items, list):
-        for item in raw_items:
-            try:
-                label = str(item.get("label", "")).strip().lower()
-                
-                # Get raw confidence and calculate a natural visual confidence
-                raw_conf = float(item.get("confidence", 0.9))
-                # Adjust confidence to feel like a natural YOLO model prediction.
-                import random
-                scale_factor = 0.82 + (random.random() * 0.06)
-                variation = (random.random() * 0.02) - 0.01
-                adjusted_confidence = (raw_conf * scale_factor) + variation
-                adjusted_confidence = round(max(0.45, min(adjusted_confidence, 0.96)), 4)
-                
-                bbox = item.get("bbox", [])
-                
-                # Validation
-                if not any(c["name"].lower() == label for c in active_classes):
-                    logger.info(f"Skipping Mimo detection '{label}' as it is not in the allowed classes.")
-                    continue
-                    
-                # Exact label case from model classes
-                matched_label = next(c["name"] for c in active_classes if c["name"].lower() == label)
                 
                 if len(bbox) == 4:
                     ymin, xmin, ymax, xmax = bbox
@@ -747,17 +543,16 @@ def run_mimo_inference(image_path: str, request_id: str) -> tuple[List[Dict[str,
                         "confidence": adjusted_confidence,
                         "bbox": [x1, y1, x2, y2]
                     })
-            except Exception as e:
-                logger.warning(f"Error parsing single Mimo item: {e}")
+            except Exception as item_err:
+                logger.warning(f"Error parsing single Mistral item: {item_err}")
                 continue
                 
-    # Structured Log
     log_payload = {
-        "event": "mimo_inference_complete",
+        "event": "mistral_inference_complete",
         "request_id": request_id,
         "inference_ms": round(inference_time_ms, 2),
         "num_items": len(detections),
-        "model_version": "cutad-agent"
+        "model_version": "pixtral-12b-2409"
     }
     logger.info(str(log_payload))
                 
@@ -802,35 +597,36 @@ def process_detection(
             raw_detections, inference_ms = run_gemini_inference(image_path, request_id)
             model_version_str = "gemini-2.5-flash"
         except Exception as gemini_err:
-            # Gemini failed — try Claude first before falling back to YOLO
-            logger.warning(f"Gemini inference failed ({type(gemini_err).__name__}: {gemini_err}). Fallback Tier 1: Trying Claude API...")
+            # Gemini failed — try Mistral first before falling back to YOLO
+            logger.warning(f"Gemini inference failed ({type(gemini_err).__name__}: {gemini_err}). Fallback Tier 1: Trying Mistral API...")
             try:
-                raw_detections, inference_ms = run_claude_inference(image_path, request_id)
-                model_version_str = "claude-sonnet-4.6 (fallback)"
+                raw_detections, inference_ms = run_mistral_inference(image_path, request_id)
+                model_version_str = "pixtral-12b-2409 (fallback)"
                 used_fallback = True
-            except Exception as claude_err:
-                # Both Gemini and Claude failed — Fallback Tier 2: YOLO
-                logger.warning(f"Claude fallback inference failed ({type(claude_err).__name__}: {claude_err}). Fallback Tier 2: Trying local YOLO...")
+            except Exception as mistral_err:
+                # Both Gemini and Mistral failed — Fallback Tier 2: YOLO
+                logger.warning(f"Mistral fallback inference failed ({type(mistral_err).__name__}: {mistral_err}). Fallback Tier 2: Trying local YOLO...")
                 raw_detections, inference_ms = run_yolo_inference(image_path, request_id)
                 model_version_str = model_status.get("active_model") or "yolo-fallback"
                 used_fallback = True
-    elif det_mode == "CLAUDE":
+    elif det_mode == "MISTRAL":
         try:
-            raw_detections, inference_ms = run_claude_inference(image_path, request_id)
-            model_version_str = "claude-sonnet-4.6"
-        except Exception as claude_err:
-            # Claude failed — silently fallback to YOLO so the user never sees an error
-            logger.warning(f"Claude inference failed ({type(claude_err).__name__}: {claude_err}). Falling back to YOLO.")
+            raw_detections, inference_ms = run_mistral_inference(image_path, request_id)
+            model_version_str = "pixtral-12b-2409"
+        except Exception as mistral_err:
+            # Mistral failed — silently fallback to YOLO so the user never sees an error
+            logger.warning(f"Mistral inference failed ({type(mistral_err).__name__}: {mistral_err}). Falling back to YOLO.")
             raw_detections, inference_ms = run_yolo_inference(image_path, request_id)
             model_version_str = model_status.get("active_model") or "yolo-fallback"
             used_fallback = True
-    elif det_mode == "MIMO":
+    elif det_mode in ("CLAUDE", "MIMO"):
+        # Deprecated modes — automatically map to MISTRAL
+        logger.info(f"Deprecated mode '{det_mode}' requested. Mapping to MISTRAL...")
         try:
-            raw_detections, inference_ms = run_mimo_inference(image_path, request_id)
-            model_version_str = "cutad-agent"
-        except Exception as mimo_err:
-            # Mimo failed — silently fallback to YOLO so the user never sees an error
-            logger.warning(f"Mimo inference failed ({type(mimo_err).__name__}: {mimo_err}). Falling back to YOLO.")
+            raw_detections, inference_ms = run_mistral_inference(image_path, request_id)
+            model_version_str = "pixtral-12b-2409"
+        except Exception as mistral_err:
+            logger.warning(f"Mistral fallback inference failed ({type(mistral_err).__name__}: {mistral_err}). Falling back to YOLO.")
             raw_detections, inference_ms = run_yolo_inference(image_path, request_id)
             model_version_str = model_status.get("active_model") or "yolo-fallback"
             used_fallback = True
