@@ -492,9 +492,11 @@ def run_mistral_inference(image_path: str, request_id: str, yolo_dets: List[Dict
         "Pay extreme attention to distinguishing white boiled eggs (telur_rebus) from white rice (nasi_putih). Boiled eggs are smooth, oval-shaped white objects (usually sliced showing a yellow yolk), whereas white rice has a grainy texture and sits at the bottom of the plate. "
         "For each food item detected, return a JSON object with: "
         "- 'label': string matching the allowed list "
-        "- 'confidence': number from 0.0 to 1.0 "        "- 'bbox': array of EXACTLY 4 integers [xmin, ymin, xmax, ymax] normalized on a 0-1000 scale (where 0,0 is top-left and 1000,1000 is bottom-right). "
+        "- 'confidence': number from 0.0 to 1.0 "
+        "- 'bbox': array of EXACTLY 4 integers [xmin, ymin, xmax, ymax] normalized on a 0-1000 scale (where 0,0 is top-left and 1000,1000 is bottom-right). "
         "Be extremely precise: each bounding box must tightly enclose ONLY that specific food item without overlapping surrounding objects. "
-        "CRITICAL: Do NOT write any conversational text, introductory remarks, markdown code blocks, or explanatory notes. Start your output IMMEDIATELY with '[' and end with ']'. Output ONLY the raw JSON array of objects. Verify that every label returned is a strict character match from the allowed list."
+        "INSTRUCTION: First, write a brief 1-2 sentence description explaining where each food item is located on the plate to think about their positions (e.g. 'nasi_putih is in the center, kangkung is at the bottom...'). "
+        "Then, output the final coordinates as a JSON array of objects inside a ```json code block. Do NOT put any other text after the code block."
     )
 
     # 5. Build Mistral API payload (OpenAI compatible format)
@@ -559,16 +561,21 @@ def run_mistral_inference(image_path: str, request_id: str, yolo_dets: List[Dict
         res_json = response.json()
         text = res_json["choices"][0]["message"]["content"].strip()
                 
-        # Clean markdown json indicators if present
-        if text.startswith("```"):
-            lines = text.splitlines()
-            if lines[0].startswith("```"):
-                lines = lines[1:]
-            if lines[-1].startswith("```"):
-                lines = lines[:-1]
-            text = "\n".join(lines).strip()
-            
-        raw_items = json.loads(text)
+        import re
+        json_text = ""
+        # Find JSON block inside ```json ... ``` or raw [ ... ]
+        json_match = re.search(r'```json\s*(\[.*?\])\s*```', text, re.DOTALL)
+        if json_match:
+            json_text = json_match.group(1).strip()
+        else:
+            # Fallback to look for any [...] array
+            json_match_any = re.search(r'(\[.*?\])', text, re.DOTALL)
+            if json_match_any:
+                json_text = json_match_any.group(1).strip()
+            else:
+                json_text = text
+                
+        raw_items = json.loads(json_text)
         logger.info(f"[Mistral Raw Response] Request {request_id}: {text}")
     except (KeyError, IndexError, ValueError) as e:
         logger.error(f"Failed to parse Mistral response: {e}. Raw response: {response.text}")
