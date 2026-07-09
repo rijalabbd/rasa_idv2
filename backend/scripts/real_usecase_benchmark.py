@@ -2,6 +2,7 @@ import sys
 import os
 import time
 
+sys.path.append('/app')
 sys.path.append('/root/rasa_idv2/backend')
 
 from app.db.session import SessionLocal
