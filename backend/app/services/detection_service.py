@@ -414,7 +414,23 @@ def run_gemini_inference(image_path: str, request_id: str) -> tuple[List[Dict[st
     
     return detections, inference_time_ms
 
-def run_mistral_inference(image_path: str, request_id: str) -> tuple[List[Dict[str, Any]], float]:
+def compute_iou(boxA, boxB):
+    """Compute Intersection over Union (IoU) between two bounding boxes [x1, y1, x2, y2]."""
+    xA = max(boxA[0], boxB[0])
+    yA = max(boxA[1], boxB[1])
+    xB = min(boxA[2], boxB[2])
+    yB = min(boxA[3], boxB[3])
+    
+    interArea = max(0, xB - xA) * max(0, yB - yA)
+    if interArea == 0:
+        return 0.0
+        
+    boxAArea = (boxA[2] - boxA[0]) * (boxA[3] - boxA[1])
+    boxBArea = (boxB[2] - boxB[0]) * (boxB[3] - boxB[1])
+    
+    return interArea / float(boxAArea + boxBArea - interArea)
+
+def run_mistral_inference(image_path: str, request_id: str, yolo_dets: List[Dict[str, Any]] = None) -> tuple[List[Dict[str, Any]], float]:
     """Run multimodal food detection using Mistral AI Vision API."""
     import base64
     import requests
@@ -599,10 +615,27 @@ def run_mistral_inference(image_path: str, request_id: str) -> tuple[List[Dict[s
                     x2 = (xmax / 1000.0) * orig_width
                     y2 = (ymax / 1000.0) * orig_height
                     
+                    final_bbox = [x1, y1, x2, y2]
+                    
+                    # YOLO-Assisted Bounding Box Snapping (for pixel-perfect precision)
+                    if yolo_dets:
+                        best_yolo = None
+                        best_iou = 0.0
+                        for yd in yolo_dets:
+                            iou = compute_iou(final_bbox, yd["bbox"])
+                            if iou > best_iou:
+                                best_iou = iou
+                                best_yolo = yd
+                                
+                        # If a YOLO box overlaps with our Mistral rough box, snap it!
+                        if best_yolo and best_iou > 0.12:
+                            logger.info(f"[Mistral Snapping] Snapped '{matched_label}' box {final_bbox} to YOLO box {best_yolo['bbox']} (IoU: {best_iou:.2f})")
+                            final_bbox = best_yolo["bbox"]
+                    
                     detections.append({
                         "label": matched_label,
                         "confidence": adjusted_confidence,
-                        "bbox": [x1, y1, x2, y2]
+                        "bbox": final_bbox
                     })
             except Exception as item_err:
                 logger.warning(f"Error parsing single Mistral item: {item_err}")
@@ -653,6 +686,14 @@ def process_detection(
     # Run inference depending on mode (with automatic YOLO fallback for GEMINI/CLAUDE/MIMO)
     used_fallback = False
     
+    # Pre-fetch YOLO boxes if mode is MISTRAL or fallback to MISTRAL is possible
+    yolo_dets = []
+    if det_mode in ("MISTRAL", "GEMINI", "CLAUDE", "MIMO"):
+        try:
+            yolo_dets, _ = run_yolo_inference(image_path, request_id)
+        except Exception as ye:
+            logger.warning(f"Failed to pre-fetch YOLO coordinates for snapping: {ye}")
+    
     if det_mode == "GEMINI":
         try:
             raw_detections, inference_ms = run_gemini_inference(image_path, request_id)
@@ -661,7 +702,7 @@ def process_detection(
             # Gemini failed — try Mistral first before falling back to YOLO
             logger.warning(f"Gemini inference failed ({type(gemini_err).__name__}: {gemini_err}). Fallback Tier 1: Trying Mistral API...")
             try:
-                raw_detections, inference_ms = run_mistral_inference(image_path, request_id)
+                raw_detections, inference_ms = run_mistral_inference(image_path, request_id, yolo_dets)
                 model_version_str = "pixtral-12b-2409 (fallback)"
                 used_fallback = True
             except Exception as mistral_err:
@@ -672,7 +713,7 @@ def process_detection(
                 used_fallback = True
     elif det_mode == "MISTRAL":
         try:
-            raw_detections, inference_ms = run_mistral_inference(image_path, request_id)
+            raw_detections, inference_ms = run_mistral_inference(image_path, request_id, yolo_dets)
             model_version_str = "pixtral-12b-2409"
         except Exception as mistral_err:
             # Mistral failed — silently fallback to YOLO so the user never sees an error
@@ -684,7 +725,7 @@ def process_detection(
         # Deprecated modes — automatically map to MISTRAL
         logger.info(f"Deprecated mode '{det_mode}' requested. Mapping to MISTRAL...")
         try:
-            raw_detections, inference_ms = run_mistral_inference(image_path, request_id)
+            raw_detections, inference_ms = run_mistral_inference(image_path, request_id, yolo_dets)
             model_version_str = "pixtral-12b-2409"
         except Exception as mistral_err:
             logger.warning(f"Mistral fallback inference failed ({type(mistral_err).__name__}: {mistral_err}). Falling back to YOLO.")
