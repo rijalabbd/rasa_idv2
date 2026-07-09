@@ -447,14 +447,14 @@ def run_mistral_inference(image_path: str, request_id: str, yolo_dets: List[Dict
         with Image.open(absolute_image_path) as img:
             orig_width, orig_height = img.size
             
-            # Compress and resize to max 512x512 for Mistral
-            img.thumbnail((512, 512))
+            # Compress and resize to max 800x800 for Mistral to preserve texture details
+            img.thumbnail((800, 800))
             
             import io
             buffer = io.BytesIO()
             if img.mode in ("RGBA", "P"):
                 img = img.convert("RGB")
-            img.save(buffer, format="JPEG", quality=75)
+            img.save(buffer, format="JPEG", quality=85)
             img_bytes = buffer.getvalue()
             img_b64 = base64.b64encode(img_bytes).decode("utf-8")
     except Exception as e:
@@ -489,6 +489,7 @@ def run_mistral_inference(image_path: str, request_id: str, yolo_dets: List[Dict
         f"You must ONLY detect objects that match one of the food classes in this allowed list: [{class_list_str}]. "
         "If an object is not in this allowed list, or is a non-food item (like plates, cups, tables, forks, spoons, background), "
         "do NOT detect it. Ignore it completely. "
+        "Pay extreme attention to distinguishing white boiled eggs (telur_rebus) from white rice (nasi_putih). Boiled eggs are smooth, oval-shaped white objects (usually sliced showing a yellow yolk), whereas white rice has a grainy texture and sits at the bottom of the plate. "
         "For each food item detected, return a JSON object with: "
         "- 'label': string matching the allowed list "
         "- 'confidence': number from 0.0 to 1.0 "        "- 'bbox': array of EXACTLY 4 integers [xmin, ymin, xmax, ymax] normalized on a 0-1000 scale (where 0,0 is top-left and 1000,1000 is bottom-right). "
