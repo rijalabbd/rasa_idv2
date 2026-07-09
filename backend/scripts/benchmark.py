@@ -50,6 +50,8 @@ def test_gemini(key):
     try:
         res = requests.post(url, json=payload, timeout=20)
         dt = (time.perf_counter() - t0) * 1000
+        if res.status_code != 200:
+            print(f"  [Gemini Debug] Status {res.status_code}: {res.text}")
         return dt, res.status_code
     except Exception as e:
         return (time.perf_counter() - t0) * 1000, str(e)
@@ -75,6 +77,8 @@ def test_claude(key):
     try:
         res = requests.post(url, headers=headers, json=payload, timeout=25)
         dt = (time.perf_counter() - t0) * 1000
+        if res.status_code != 200:
+            print(f"  [Claude Debug] Status {res.status_code}: {res.text}")
         return dt, res.status_code
     except Exception as e:
         return (time.perf_counter() - t0) * 1000, str(e)
