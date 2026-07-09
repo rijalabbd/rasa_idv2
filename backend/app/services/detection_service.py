@@ -87,6 +87,49 @@ def run_yolo_inference(image_path: str, request_id: str) -> tuple[List[Dict[str,
     
     return detections, inference_time_ms
 
+# Global cache for healthy Gemini API keys
+_healthy_gemini_keys = []
+_last_health_check = 0.0
+_health_check_lock = threading.Lock()
+
+def refresh_gemini_health_pool():
+    """Lightweight background parallel ping to find active, non-exhausted Gemini API keys."""
+    global _healthy_gemini_keys, _last_health_check
+    if not settings.GEMINI_API_KEY or not settings.GEMINI_API_KEY.strip():
+        return
+    
+    api_keys = [k.strip() for k in settings.GEMINI_API_KEY.split(",") if k.strip()]
+    if not api_keys:
+        return
+        
+    import concurrent.futures
+    import requests
+    
+    def ping_key(key):
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={key}"
+        # Super tiny request (just 1 token) to check key and credit status
+        payload = {"contents": [{"parts": [{"text": "say ok"}]}], "generationConfig": {"maxOutputTokens": 2}}
+        try:
+            res = requests.post(url, json=payload, headers={"Content-Type": "application/json"}, timeout=2.5)
+            if res.status_code == 200:
+                return key, True
+            return key, False
+        except Exception:
+            return key, False
+            
+    healthy = []
+    with concurrent.futures.ThreadPoolExecutor(max_workers=len(api_keys)) as executor:
+        futures = [executor.submit(ping_key, k) for k in api_keys]
+        for f in concurrent.futures.as_completed(futures):
+            k, ok = f.result()
+            if ok:
+                healthy.append(k)
+                
+    with _health_check_lock:
+        _healthy_gemini_keys = healthy
+        _last_health_check = time.perf_counter()
+        logger.info(f"Gemini API Health Check complete. {len(_healthy_gemini_keys)}/{len(api_keys)} keys are ready.")
+
 def run_gemini_inference(image_path: str, request_id: str) -> tuple[List[Dict[str, Any]], float]:
     """Run low-latency multimodal food detection using Google Gemini 2.0 API."""
     import base64
@@ -123,7 +166,7 @@ def run_gemini_inference(image_path: str, request_id: str) -> tuple[List[Dict[st
             code="IMAGE_READ_ERROR"
         )
         
-    # 3. Check and load GEMINI_API_KEY(s)
+    # 3. Check and load GEMINI_API_KEY(s) using the Health Pool
     if not settings.GEMINI_API_KEY or not settings.GEMINI_API_KEY.strip():
         raise AppException(
             status_code=400,
@@ -131,7 +174,21 @@ def run_gemini_inference(image_path: str, request_id: str) -> tuple[List[Dict[st
             code="DETECTION_KEY_MISSING"
         )
         
-    api_keys = [k.strip() for k in settings.GEMINI_API_KEY.split(",") if k.strip()]
+    global _healthy_gemini_keys, _last_health_check
+    
+    # Trigger health check if empty (sync) or expired (async background)
+    if not _healthy_gemini_keys or _last_health_check == 0.0:
+        refresh_gemini_health_pool()
+    elif time.perf_counter() - _last_health_check > 180:
+        threading.Thread(target=refresh_gemini_health_pool, daemon=True).start()
+        
+    with _health_check_lock:
+        api_keys = list(_healthy_gemini_keys)
+        
+    # Fallback to all keys if the pool is empty (safety net)
+    if not api_keys:
+        api_keys = [k.strip() for k in settings.GEMINI_API_KEY.split(",") if k.strip()]
+        
     if not api_keys:
         raise AppException(
             status_code=400,
@@ -146,7 +203,7 @@ def run_gemini_inference(image_path: str, request_id: str) -> tuple[List[Dict[st
     except Exception as e:
         logger.warning(f"Failed to fetch active YOLO classes: {e}. General fallback will be used.")
         valid_labels = []
-
+ 
     class_list_str = ", ".join([f"'{lbl}'" for lbl in valid_labels]) if valid_labels else "any food label"
     system_instruction_text = (
         "You are an expert food detection AI. Your task is to identify food items in the image. "
@@ -155,7 +212,7 @@ def run_gemini_inference(image_path: str, request_id: str) -> tuple[List[Dict[st
         "do NOT detect it. Ignore it completely. "
         "Verify that every label returned is a strict character match from the allowed list."
     )
-
+ 
     # 5. Build Gemini API payload with systemInstruction and responseSchema (highly optimized for low latency)
     payload = {
         "systemInstruction": {
@@ -225,6 +282,11 @@ def run_gemini_inference(image_path: str, request_id: str) -> tuple[List[Dict[st
             # 8-second hard timeout: if Gemini doesn't respond, we fallback to YOLO
             response = requests.post(url, headers=headers, json=payload, timeout=8)
             if response.status_code == 429:
+                # Remove from healthy pool immediately
+                with _health_check_lock:
+                    if current_key in _healthy_gemini_keys:
+                        _healthy_gemini_keys.remove(current_key)
+                        
                 if len(api_keys) > 1:
                     logger.warning(f"Gemini API key index {key_index % len(api_keys)} returned 429. Rotating key... (Attempt {attempt+1}/{max_retries})")
                     key_index += 1
