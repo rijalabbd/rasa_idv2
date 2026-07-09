@@ -475,8 +475,7 @@ def run_mistral_inference(image_path: str, request_id: str) -> tuple[List[Dict[s
         "do NOT detect it. Ignore it completely. "
         "For each food item detected, return a JSON object with: "
         "- 'label': string matching the allowed list "
-        "- 'confidence': number from 0.0 to 1.0 "
-        "- 'bbox': array of EXACTLY 4 integers [ymin, xmin, ymax, xmax] normalized on a 0-1000 scale. "
+        "- 'confidence': number from 0.0 to 1.0 "        "- 'bbox': array of EXACTLY 4 integers [xmin, ymin, xmax, ymax] normalized on a 0-1000 scale (where 0,0 is top-left and 1000,1000 is bottom-right). "
         "Be extremely precise: each bounding box must tightly enclose ONLY that specific food item without overlapping surrounding objects. "
         "CRITICAL: Do NOT write any conversational text, introductory remarks, markdown code blocks, or explanatory notes. Start your output IMMEDIATELY with '[' and end with ']'. Output ONLY the raw JSON array of objects. Verify that every label returned is a strict character match from the allowed list."
     )
@@ -495,7 +494,7 @@ def run_mistral_inference(image_path: str, request_id: str) -> tuple[List[Dict[s
                 "content": [
                     {
                         "type": "text",
-                        "text": "Identify food items in the image and return JSON coordinates."
+                        "text": "Identify food items in the image and return JSON coordinates [xmin, ymin, xmax, ymax]."
                     },
                     {
                         "type": "image_url",
@@ -562,7 +561,7 @@ def run_mistral_inference(image_path: str, request_id: str) -> tuple[List[Dict[s
             code="MISTRAL_RESPONSE_PARSE_ERROR"
         )
         
-    # 7. Convert coordinates [ymin, xmin, ymax, xmax] (0-1000) -> [x1, y1, x2, y2] (original pixels)
+    # 7. Convert coordinates [xmin, ymin, xmax, ymax] (0-1000) -> [x1, y1, x2, y2] (original pixels)
     detections = []
     if isinstance(raw_items, list):
         for item in raw_items:
@@ -573,7 +572,7 @@ def run_mistral_inference(image_path: str, request_id: str) -> tuple[List[Dict[s
                 if not any(c["name"].lower() == label for c in active_classes):
                     logger.info(f"Skipping Mistral detection '{label}' as it is not in the allowed classes.")
                     continue
-                    
+                
                 # Exact label case from model classes
                 matched_label = next(c["name"] for c in active_classes if c["name"].lower() == label)
                 
@@ -589,12 +588,12 @@ def run_mistral_inference(image_path: str, request_id: str) -> tuple[List[Dict[s
                 
                 # Fallback for 3-element bbox if returned
                 if len(bbox) == 3:
-                    ymin, xmin, val3 = bbox
-                    bbox = [ymin, xmin, 980, val3 if val3 > xmin else 1000]
+                    xmin, ymin, val3 = bbox
+                    bbox = [xmin, ymin, 980, val3 if val3 > ymin else 1000]
                 
                 if len(bbox) == 4:
-                    ymin, xmin, ymax, xmax = bbox
-                    # Convert normalized 0-1000 to original pixel coordinates
+                    xmin, ymin, xmax, ymax = bbox
+                    # Convert normalized 0-1000 [xmin, ymin, xmax, ymax] to original pixel coordinates
                     x1 = (xmin / 1000.0) * orig_width
                     y1 = (ymin / 1000.0) * orig_height
                     x2 = (xmax / 1000.0) * orig_width
