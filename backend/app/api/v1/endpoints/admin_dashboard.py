@@ -129,8 +129,6 @@ async def get_admin_settings():
     return {
         "detection_mode": current_settings.get("detection_mode", "YOLO"),
         "has_gemini_key": bool(settings.GEMINI_API_KEY and settings.GEMINI_API_KEY.strip()),
-        "has_claude_key": bool(settings.CLAUDE_API_KEY and settings.CLAUDE_API_KEY.strip()),
-        "has_mimo_key": bool(settings.MIMO_API_KEY and settings.MIMO_API_KEY.strip()),
         "has_mistral_key": bool(settings.MISTRAL_API_KEY and settings.MISTRAL_API_KEY.strip())
     }
 
