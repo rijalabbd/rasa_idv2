@@ -9,8 +9,8 @@ from app.db.session import SessionLocal
 from app.models.analysis import Analysis
 from app.models.detection import Detection
 from app.models.feedback import Feedback
-from app.models.mapping import MappingFood
-from app.models.tkpi import TKPIFood
+from app.models.yolo_tkpi_mapping import YoloTkpiMapping
+from app.models.tkpi_food import TKPIFood
 from app.services import settings_service
 from app.services.detection_service import process_detection
 
