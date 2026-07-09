@@ -6,11 +6,14 @@ sys.path.append('/app')
 sys.path.append('/root/rasa_idv2/backend')
 
 from app.db.session import SessionLocal
-from app.models.analysis import Analysis
-from app.models.detection import Detection
-from app.models.feedback import Feedback
-from app.models.yolo_tkpi_mapping import YoloTkpiMapping
-from app.models.tkpi_food import TKPIFood
+# Dynamically import all model modules to register SQLAlchemy classes
+import importlib
+import pkgutil
+import app.models
+
+for _, module_name, _ in pkgutil.iter_modules(app.models.__path__):
+    importlib.import_module(f"app.models.{module_name}")
+
 from app.services import settings_service
 from app.services.detection_service import process_detection
 
