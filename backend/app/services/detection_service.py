@@ -608,7 +608,7 @@ def run_mistral_inference(image_path: str, request_id: str, yolo_dets: List[Dict
                 adjusted_confidence = (raw_conf * scale_factor) + variation
                 adjusted_confidence = round(max(0.45, min(adjusted_confidence, 0.96)), 4)
                 
-                bbox = item.get("bbox", [])
+                bbox = item.get("bbox") or item.get("box_2d") or []
                 
                 # Fallback for 3-element bbox if returned
                 if len(bbox) == 3:
@@ -840,7 +840,7 @@ def run_weizerouter_inference(image_path: str, request_id: str, yolo_dets: List[
                 adjusted_confidence = (raw_conf * scale_factor) + variation
                 adjusted_confidence = round(max(0.45, min(adjusted_confidence, 0.96)), 4)
                 
-                bbox = item.get("bbox", [])
+                bbox = item.get("bbox") or item.get("box_2d") or []
                 
                 # Fallback for 3-element bbox if returned
                 if len(bbox) == 3:
