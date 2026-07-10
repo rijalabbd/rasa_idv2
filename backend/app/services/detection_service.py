@@ -728,7 +728,7 @@ def run_weizerouter_inference(image_path: str, request_id: str, yolo_dets: List[
     # 5. Build payload (OpenAI compatible format)
     payload = {
         "model": model_name,
-        "max_tokens": 1000,
+        "max_tokens": 8000,
         "temperature": 0.1,
         "stream": False,  # Mandatory!
         "messages": [
