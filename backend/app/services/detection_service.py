@@ -722,8 +722,7 @@ def run_weizerouter_inference(image_path: str, request_id: str, yolo_dets: List[
         "- 'confidence': number from 0.0 to 1.0 "
         "- 'bbox': array of EXACTLY 4 integers [xmin, ymin, xmax, ymax] normalized on a 0-1000 scale (where 0,0 is top-left and 1000,1000 is bottom-right). "
         "Be extremely precise: each bounding box must tightly enclose ONLY that specific food item without overlapping surrounding objects. "
-        "INSTRUCTION: First, write a brief 1-2 sentence description explaining where each food item is located on the plate to think about their positions (e.g. 'nasi_putih is in the center, kangkung is at the bottom...'). "
-        "Then, output the final coordinates as a JSON array of objects inside a ```json code block. Do NOT put any other text after the code block."
+        "CRITICAL: Do NOT write any conversational text, introductory remarks, markdown code blocks, or explanatory notes. Start your output IMMEDIATELY with '[' and end with ']'. Output ONLY the raw JSON array of objects. Verify that every label returned is a strict character match from the allowed list."
     )
 
     # 5. Build payload (OpenAI compatible format)
