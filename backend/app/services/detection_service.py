@@ -957,18 +957,25 @@ def process_detection(
             raw_detections, inference_ms = run_weizerouter_inference(image_path, request_id, yolo_dets)
             model_version_str = getattr(settings, "WEIZEROUTER_MODEL", None) or "wz/gemini-2.5-pro"
         except Exception as wz_err:
-            # WeizeRouter failed — try Mistral first before falling back to YOLO
-            logger.warning(f"WeizeRouter inference failed ({type(wz_err).__name__}: {wz_err}). Fallback Tier 1: Trying Mistral API...")
+            # Fallback Tier 1: Try Google Gemini AI Studio health pool
+            logger.warning(f"WeizeRouter inference failed ({type(wz_err).__name__}: {wz_err}). Fallback Tier 1: Trying Google Gemini AI Studio Pool...")
             try:
-                raw_detections, inference_ms = run_mistral_inference(image_path, request_id, yolo_dets)
-                model_version_str = "pixtral-12b-2409 (fallback)"
+                raw_detections, inference_ms = run_gemini_inference(image_path, request_id)
+                model_version_str = "gemini-2.5-flash (fallback)"
                 used_fallback = True
-            except Exception as mistral_err:
-                # Both WeizeRouter and Mistral failed — Fallback Tier 2: YOLO
-                logger.warning(f"Mistral fallback inference failed ({type(mistral_err).__name__}: {mistral_err}). Fallback Tier 2: Trying local YOLO...")
-                raw_detections, inference_ms = run_yolo_inference(image_path, request_id)
-                model_version_str = model_status.get("active_model") or "yolo-fallback"
-                used_fallback = True
+            except Exception as gemini_err:
+                # Fallback Tier 2: Try Mistral AI
+                logger.warning(f"Gemini fallback inference failed ({type(gemini_err).__name__}: {gemini_err}). Fallback Tier 2: Trying Mistral API...")
+                try:
+                    raw_detections, inference_ms = run_mistral_inference(image_path, request_id, yolo_dets)
+                    model_version_str = "pixtral-12b-2409 (fallback)"
+                    used_fallback = True
+                except Exception as mistral_err:
+                    # Fallback Tier 3: Try local YOLO
+                    logger.warning(f"Mistral fallback inference failed ({type(mistral_err).__name__}: {mistral_err}). Fallback Tier 3: Trying local YOLO...")
+                    raw_detections, inference_ms = run_yolo_inference(image_path, request_id)
+                    model_version_str = model_status.get("active_model") or "yolo-fallback"
+                    used_fallback = True
     elif det_mode == "MISTRAL":
         try:
             raw_detections, inference_ms = run_mistral_inference(image_path, request_id, yolo_dets)
