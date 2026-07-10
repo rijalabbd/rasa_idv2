@@ -141,10 +141,10 @@ async def update_admin_settings(
 ):
     """Update admin settings (detection mode)."""
     audit = AuditService(db)
-    if payload.detection_mode not in ("YOLO", "GEMINI", "MISTRAL"):
+    if payload.detection_mode not in ("YOLO", "GEMINI", "MISTRAL", "WEIZEROUTER"):
         raise AppException(
             status_code=400,
-            detail="Invalid detection mode. Supported modes are 'YOLO', 'GEMINI', and 'MISTRAL'.",
+            detail="Invalid detection mode. Supported modes are 'YOLO', 'GEMINI', 'MISTRAL', and 'WEIZEROUTER'.",
             code="INVALID_DETECTION_MODE"
         )
     

@@ -304,7 +304,8 @@ def render_dashboard():
                 mode_options = {
                     "YOLO": "YOLO (Model Lokal - Cepat & Luring)",
                     "GEMINI": "Gemini API (Cloud - Dinamis & Cerdas)",
-                    "MISTRAL": "Mistral API (Cloud - Pixtral Vision)"
+                    "MISTRAL": "Mistral API (Cloud - Pixtral Vision)",
+                    "WEIZEROUTER": "WeizeRouter (Gemini 2.5 Pro)"
                 }
                 
                 # Determine active index safely
@@ -312,6 +313,8 @@ def render_dashboard():
                     idx = 1
                 elif curr_mode == "MISTRAL":
                     idx = 2
+                elif curr_mode == "WEIZEROUTER":
+                    idx = 3
                 else:
                     idx = 0
                 
@@ -334,6 +337,8 @@ def render_dashboard():
                         st.error("⚠️ **Peringatan:** `MISTRAL_API_KEY` tidak terdeteksi di server. Mode ini tidak akan berfungsi sebelum kunci API ditambahkan.")
                     else:
                         st.success("✅ `MISTRAL_API_KEY` terkonfigurasi di server (api.mistral.ai). Siap digunakan.")
+                elif selected_mode == "WEIZEROUTER":
+                    st.success("✅ WeizeRouter (`wz/gemini-2.5-pro`) siap digunakan dengan API Key Anda.")
                 else:
                     st.info("ℹ️ Mode YOLO menggunakan model lokal `active.pt` yang diunggah di atas.")
                     

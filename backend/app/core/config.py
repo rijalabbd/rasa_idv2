@@ -31,6 +31,11 @@ class Settings(BaseSettings):
     # Mistral API
     MISTRAL_API_KEY: str | None = None
     
+    # WeizeRouter API
+    WEIZEROUTER_API_KEY: str | None = None
+    WEIZEROUTER_BASE_URL: str = "https://weizerouter.web.id/v1"
+    WEIZEROUTER_MODEL: str = "wz/gemini-2.5-pro"
+    
     # Reliability & Limits
     MAX_UPLOAD_SIZE: int = 10 * 1024 * 1024  # 10MB default
     DETECT_TIMEOUT_SECONDS: int = 30

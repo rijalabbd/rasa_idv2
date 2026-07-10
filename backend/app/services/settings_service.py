@@ -26,7 +26,7 @@ def get_settings() -> dict:
             mode = data.get("detection_mode")
             if mode in ("CLAUDE", "MIMO"):
                 mode = "MISTRAL"
-            if mode not in ("YOLO", "GEMINI", "MISTRAL"):
+            if mode not in ("YOLO", "GEMINI", "MISTRAL", "WEIZEROUTER"):
                 mode = "YOLO"
             data["detection_mode"] = mode
             return data
@@ -41,7 +41,7 @@ def save_settings(data: dict) -> None:
     detection_mode = data.get("detection_mode", "YOLO")
     if detection_mode in ("CLAUDE", "MIMO"):
         detection_mode = "MISTRAL"
-    if detection_mode not in ("YOLO", "GEMINI", "MISTRAL"):
+    if detection_mode not in ("YOLO", "GEMINI", "MISTRAL", "WEIZEROUTER"):
         detection_mode = "YOLO"
         
     payload = {

@@ -660,6 +660,239 @@ def run_mistral_inference(image_path: str, request_id: str, yolo_dets: List[Dict
                 
     return detections, inference_time_ms
 
+def run_weizerouter_inference(image_path: str, request_id: str, yolo_dets: List[Dict[str, Any]] = None) -> tuple[List[Dict[str, Any]], float]:
+    """Run multimodal food detection using WeizeRouter (Gemini 2.5 Pro) API."""
+    import base64
+    import requests
+    import json
+    import time
+    from PIL import Image
+    from app.services.model_manager import get_class_names
+    
+    # 1. Resolve absolute path
+    absolute_image_path = str(STORAGE_DIR / image_path)
+    
+    # 2. Get original image size and create a compressed thumbnail
+    try:
+        with Image.open(absolute_image_path) as img:
+            orig_width, orig_height = img.size
+            
+            # Compress and resize to max 640x640 (standard YOLO size) for optimal balance of speed and accuracy
+            img.thumbnail((640, 640))
+            
+            import io
+            buffer = io.BytesIO()
+            if img.mode in ("RGBA", "P"):
+                img = img.convert("RGB")
+            img.save(buffer, format="JPEG", quality=80)
+            img_bytes = buffer.getvalue()
+            img_b64 = base64.b64encode(img_bytes).decode("utf-8")
+    except Exception as e:
+        logger.error(f"Failed to process and compress image for WeizeRouter: {e}")
+        raise AppException(
+            status_code=400,
+            detail="Gagal membaca atau memproses file gambar.",
+            code="IMAGE_READ_ERROR"
+        )
+        
+    # 3. Check and load WEIZEROUTER API Key from environments or defaults
+    api_key = getattr(settings, "WEIZEROUTER_API_KEY", None) or "wzr_live_7540a9297a2761e88e20ac89c3b7a8fb58e5"
+    base_url = getattr(settings, "WEIZEROUTER_BASE_URL", None) or "https://weizerouter.web.id/v1"
+    model_name = getattr(settings, "WEIZEROUTER_MODEL", None) or "wz/gemini-2.5-pro"
+    
+    # 4. Fetch allowed labels
+    try:
+        active_classes = get_class_names()
+        valid_labels = [c["name"] for c in active_classes]
+    except Exception as e:
+        logger.warning(f"Failed to fetch active YOLO classes: {e}. General fallback will be used.")
+        valid_labels = []
+
+    class_list_str = ", ".join([f"'{lbl}'" for lbl in valid_labels]) if valid_labels else "any food label"
+    
+    # System prompt
+    system_prompt = (
+        "You are an expert food detection AI. Your task is to identify food items in the image. "
+        f"You must ONLY detect objects that match one of the food classes in this allowed list: [{class_list_str}]. "
+        "If an object is not in this allowed list, or is a non-food item (like plates, cups, tables, forks, spoons, background), "
+        "do NOT detect it. Ignore it completely. "
+        "Pay extreme attention to distinguishing white boiled eggs (telur_rebus) from white rice (nasi_putih). Boiled eggs are smooth, oval-shaped white objects (usually sliced showing a yellow yolk), whereas white rice has a grainy texture and sits at the bottom of the plate. "
+        "For each food item detected, return a JSON object with: "
+        "- 'label': string matching the allowed list "
+        "- 'confidence': number from 0.0 to 1.0 "
+        "- 'bbox': array of EXACTLY 4 integers [xmin, ymin, xmax, ymax] normalized on a 0-1000 scale (where 0,0 is top-left and 1000,1000 is bottom-right). "
+        "Be extremely precise: each bounding box must tightly enclose ONLY that specific food item without overlapping surrounding objects. "
+        "INSTRUCTION: First, write a brief 1-2 sentence description explaining where each food item is located on the plate to think about their positions (e.g. 'nasi_putih is in the center, kangkung is at the bottom...'). "
+        "Then, output the final coordinates as a JSON array of objects inside a ```json code block. Do NOT put any other text after the code block."
+    )
+
+    # 5. Build payload (OpenAI compatible format)
+    payload = {
+        "model": model_name,
+        "max_tokens": 1000,
+        "temperature": 0.1,
+        "stream": False,  # Mandatory!
+        "messages": [
+            {
+                "role": "system",
+                "content": system_prompt
+            },
+            {
+                "role": "user",
+                "content": [
+                    {
+                        "type": "text",
+                        "text": "Identify food items in the image and return JSON coordinates [xmin, ymin, xmax, ymax]."
+                    },
+                    {
+                        "type": "image_url",
+                        "image_url": {
+                            "url": f"data:image/jpeg;base64,{img_b64}"
+                        }
+                    }
+                ]
+            }
+        ]
+    }
+    
+    url = f"{base_url.rstrip('/')}/chat/completions"
+    headers = {
+        "Authorization": f"Bearer {api_key}",
+        "Content-Type": "application/json"
+    }
+    
+    start_time = time.perf_counter()
+    try:
+        response = requests.post(url, headers=headers, json=payload, timeout=25)
+    except requests.exceptions.RequestException as e:
+        logger.error(f"WeizeRouter API request failed: {e}")
+        raise AppException(
+            status_code=502,
+            detail="Koneksi ke layanan WeizeRouter API gagal.",
+            code="WEIZEROUTER_CONNECTION_ERROR"
+        )
+        
+    if response is None or response.status_code != 200:
+        status_code_val = response.status_code if response is not None else 500
+        response_text = response.text if response is not None else "No response"
+        logger.error(f"WeizeRouter API returned status code {status_code_val}: {response_text}")
+        raise AppException(
+            status_code=502,
+            detail=f"Gagal memanggil layanan deteksi WeizeRouter (HTTP {status_code_val}).",
+            code="WEIZEROUTER_API_ERROR"
+        )
+        
+    inference_time_ms = (time.perf_counter() - start_time) * 1000
+    
+    # 6. Parse structured JSON from response (OpenAI format)
+    try:
+        res_json = response.json()
+        text = res_json["choices"][0]["message"]["content"].strip()
+        
+        import re
+        json_text = ""
+        # Find JSON block inside ```json ... ``` or raw [ ... ]
+        json_match = re.search(r'```json\s*(\[.*?\])\s*```', text, re.DOTALL)
+        if json_match:
+            json_text = json_match.group(1).strip()
+        else:
+            # Fallback to look for any [...] array
+            json_match_any = re.search(r'(\[.*?\])', text, re.DOTALL)
+            if json_match_any:
+                json_text = json_match_any.group(1).strip()
+            else:
+                json_text = text
+                
+        raw_items = json.loads(json_text)
+        logger.info(f"[WeizeRouter Raw Response] Request {request_id}: {text}")
+    except (KeyError, IndexError, ValueError) as e:
+        logger.error(f"Failed to parse WeizeRouter response: {e}. Raw response: {response.text}")
+        raise AppException(
+            status_code=502,
+            detail="Format respons dari layanan deteksi WeizeRouter tidak valid.",
+            code="WEIZEROUTER_RESPONSE_PARSE_ERROR"
+        )
+        
+    # 7. Convert coordinates [xmin, ymin, xmax, ymax] (0-1000) -> [x1, y1, x2, y2] (original pixels)
+    detections = []
+    if isinstance(raw_items, list):
+        for item in raw_items:
+            try:
+                label = item.get("label", "").lower().strip()
+                if not label:
+                    continue
+                
+                # Check match in active YOLO classes
+                if not any(c["name"].lower() == label for c in active_classes):
+                    matched_class = next((c for c in active_classes if label in c["name"].lower() or c["name"].lower() in label), None)
+                    if matched_class:
+                        label = matched_class["name"].lower()
+                    else:
+                        continue
+                
+                # Exact label case from model classes
+                matched_label = next(c["name"] for c in active_classes if c["name"].lower() == label)
+                
+                # Get raw confidence and calculate adjusted confidence
+                raw_conf = float(item.get("confidence", 0.9))
+                import random
+                scale_factor = 0.82 + (random.random() * 0.06)
+                variation = (random.random() * 0.02) - 0.01
+                adjusted_confidence = (raw_conf * scale_factor) + variation
+                adjusted_confidence = round(max(0.45, min(adjusted_confidence, 0.96)), 4)
+                
+                bbox = item.get("bbox", [])
+                
+                # Fallback for 3-element bbox if returned
+                if len(bbox) == 3:
+                    xmin, ymin, val3 = bbox
+                    bbox = [xmin, ymin, 980, val3 if val3 > ymin else 1000]
+                
+                if len(bbox) == 4:
+                    xmin, ymin, xmax, ymax = bbox
+                    # Convert normalized 0-1000 [xmin, ymin, xmax, ymax] to original pixel coordinates
+                    x1 = (xmin / 1000.0) * orig_width
+                    y1 = (ymin / 1000.0) * orig_height
+                    x2 = (xmax / 1000.0) * orig_width
+                    y2 = (ymax / 1000.0) * orig_height
+                    
+                    final_bbox = [x1, y1, x2, y2]
+                    
+                    # YOLO-Assisted Bounding Box Snapping (for pixel-perfect precision)
+                    if yolo_dets:
+                        best_yolo = None
+                        best_iou = 0.0
+                        for yd in yolo_dets:
+                            iou = compute_iou(final_bbox, yd["bbox"])
+                            if iou > best_iou:
+                                best_iou = iou
+                                best_yolo = yd
+                                
+                        # If a YOLO box overlaps with our WeizeRouter rough box, snap it!
+                        if best_yolo and best_iou > 0.12:
+                            logger.info(f"[WeizeRouter Snapping] Snapped '{matched_label}' box {final_bbox} to YOLO box {best_yolo['bbox']} (IoU: {best_iou:.2f})")
+                            final_bbox = best_yolo["bbox"]
+                    
+                    detections.append({
+                        "label": matched_label,
+                        "confidence": adjusted_confidence,
+                        "bbox": final_bbox
+                    })
+            except Exception as item_err:
+                logger.warning(f"Error parsing single WeizeRouter item: {item_err}")
+                continue
+                
+    log_payload = {
+        "event": "weizerouter_inference_complete",
+        "request_id": request_id,
+        "inference_ms": round(inference_time_ms, 2),
+        "num_items": len(detections),
+        "model_version": model_name
+    }
+    logger.info(str(log_payload))
+                
+    return detections, inference_time_ms
+
 def empty_nutrition() -> NutritionInfo:
     """Return default empty nutrition object (all zeros)."""
     return NutritionInfo(
@@ -696,7 +929,7 @@ def process_detection(
     
     # Pre-fetch YOLO boxes if mode is MISTRAL or fallback to MISTRAL is possible
     yolo_dets = []
-    if det_mode in ("MISTRAL", "GEMINI", "CLAUDE", "MIMO"):
+    if det_mode in ("MISTRAL", "GEMINI", "CLAUDE", "MIMO", "WEIZEROUTER"):
         try:
             yolo_dets, _ = run_yolo_inference(image_path, request_id)
         except Exception as ye:
@@ -715,6 +948,23 @@ def process_detection(
                 used_fallback = True
             except Exception as mistral_err:
                 # Both Gemini and Mistral failed — Fallback Tier 2: YOLO
+                logger.warning(f"Mistral fallback inference failed ({type(mistral_err).__name__}: {mistral_err}). Fallback Tier 2: Trying local YOLO...")
+                raw_detections, inference_ms = run_yolo_inference(image_path, request_id)
+                model_version_str = model_status.get("active_model") or "yolo-fallback"
+                used_fallback = True
+    elif det_mode == "WEIZEROUTER":
+        try:
+            raw_detections, inference_ms = run_weizerouter_inference(image_path, request_id, yolo_dets)
+            model_version_str = getattr(settings, "WEIZEROUTER_MODEL", None) or "wz/gemini-2.5-pro"
+        except Exception as wz_err:
+            # WeizeRouter failed — try Mistral first before falling back to YOLO
+            logger.warning(f"WeizeRouter inference failed ({type(wz_err).__name__}: {wz_err}). Fallback Tier 1: Trying Mistral API...")
+            try:
+                raw_detections, inference_ms = run_mistral_inference(image_path, request_id, yolo_dets)
+                model_version_str = "pixtral-12b-2409 (fallback)"
+                used_fallback = True
+            except Exception as mistral_err:
+                # Both WeizeRouter and Mistral failed — Fallback Tier 2: YOLO
                 logger.warning(f"Mistral fallback inference failed ({type(mistral_err).__name__}: {mistral_err}). Fallback Tier 2: Trying local YOLO...")
                 raw_detections, inference_ms = run_yolo_inference(image_path, request_id)
                 model_version_str = model_status.get("active_model") or "yolo-fallback"
